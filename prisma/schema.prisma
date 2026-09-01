@@ -1,0 +1,402 @@
+// AL-MAKKAH REAL ESTATE - data model
+// Market: Hyderabad, Pakistan only. Currency: PKR only. No agent accounts (single admin team).
+
+generator client {
+  provider = "prisma-client-js"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+  // Prisma 7: connection URLs live in prisma.config.ts (migrations) and in the
+  // driver adapter passed to PrismaClient (runtime). See src/lib/db.ts.
+}
+
+// ---------------------------------------------------------------- enums
+
+enum Purpose {
+  SALE
+  RENT
+}
+
+enum PropertyType {
+  HOUSE
+  PLOT
+  BUNGALOW
+  FLAT
+  APARTMENT
+  PORTION
+  COMMERCIAL
+}
+
+/// Unit chosen per listing at upload time. Display uses this unit verbatim;
+/// filtering and sorting use the derived Property.areaSqFt.
+enum AreaUnit {
+  SQ_FT
+  SQ_YD
+  MARLA
+  KANAL
+  ACRE
+  SQ_M
+}
+
+enum ListingStatus {
+  DRAFT
+  PENDING_REVIEW
+  UNDER_VERIFICATION
+  APPROVED
+  PUBLISHED
+  SOLD
+  RENTED
+  REJECTED
+  ARCHIVED
+}
+
+enum VerificationStatus {
+  UNVERIFIED
+  IN_PROGRESS
+  VERIFIED
+  FAILED
+}
+
+enum Furnishing {
+  UNFURNISHED
+  SEMI_FURNISHED
+  FURNISHED
+}
+
+enum MediaKind {
+  IMAGE
+  VIDEO
+  FLOOR_PLAN
+  TOUR_360
+}
+
+enum UploadStatus {
+  PENDING
+  READY
+  FAILED
+}
+
+enum SubmissionStatus {
+  SUBMITTED
+  UNDER_REVIEW
+  VERIFICATION
+  APPROVED
+  REJECTED
+}
+
+enum InquiryKind {
+  BUY
+  RENT
+  SELL
+  CONTACT
+  VIEWING
+}
+
+enum InquiryStatus {
+  NEW
+  IN_PROGRESS
+  CLOSED
+  SPAM
+}
+
+enum AdminRole {
+  ADMIN
+  SUPER_ADMIN
+}
+
+// ---------------------------------------------------------------- location
+
+/// Curated localities within Hyderabad. Admin-managed; no free-text city field.
+model Area {
+  id         String     @id @default(cuid())
+  name       String     @unique
+  slug       String     @unique
+  sortOrder  Int        @default(0)
+  isActive   Boolean    @default(true)
+  properties Property[]
+  createdAt  DateTime   @default(now())
+  updatedAt  DateTime   @updatedAt
+
+  @@index([isActive, sortOrder])
+}
+
+// ---------------------------------------------------------------- property
+
+model Property {
+  id          String @id @default(cuid())
+  refNo       String @unique // e.g. AMK-1042 - public-facing reference
+  slug        String @unique
+  title       String
+  description String @db.Text
+
+  purpose Purpose
+  type    PropertyType
+
+  /// PKR. For RENT listings this is the monthly rent.
+  price Decimal @db.Decimal(14, 2)
+
+  /// Area exactly as entered by the uploader, in their chosen unit.
+  areaValue Decimal  @db.Decimal(12, 3)
+  areaUnit  AreaUnit
+  /// Derived from areaValue + areaUnit on write. Never entered by hand.
+  /// Exists solely so cross-listing filtering and sorting compare like with like.
+  areaSqFt  Decimal  @db.Decimal(14, 2)
+
+  bedrooms  Int?
+  bathrooms Int?
+  floors    Int?
+  parking   Int?
+  yearBuilt Int?
+
+  furnishing     Furnishing?
+  facing         String?
+  hasElectricity Boolean     @default(false)
+  hasGas         Boolean     @default(false)
+  hasWater       Boolean     @default(false)
+  hasSecurity    Boolean     @default(false)
+
+  areaId       String
+  areaRelation Area    @relation(fields: [areaId], references: [id])
+  addressLine  String?
+  latitude     Float?
+  longitude    Float?
+
+  status             ListingStatus      @default(DRAFT)
+  verificationStatus VerificationStatus @default(UNVERIFIED)
+  isFeatured         Boolean            @default(false)
+  publishedAt        DateTime?
+  rejectionReason    String?
+  adminNotes         String?            @db.Text
+
+  amenities    PropertyAmenity[]
+  media        PropertyMedia[]
+  documents    PropertyDocument[]
+  verification Verification?
+  inquiries    Inquiry[]
+  submission   SellerSubmission?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([purpose, status, publishedAt])
+  @@index([type, status])
+  @@index([areaId, status])
+  @@index([price])
+  @@index([areaSqFt])
+  @@index([isFeatured, status])
+}
+
+model Amenity {
+  id         String            @id @default(cuid())
+  name       String            @unique
+  slug       String            @unique
+  icon       String?
+  properties PropertyAmenity[]
+}
+
+model PropertyAmenity {
+  propertyId String
+  amenityId  String
+  property   Property @relation(fields: [propertyId], references: [id], onDelete: Cascade)
+  amenity    Amenity  @relation(fields: [amenityId], references: [id], onDelete: Cascade)
+
+  @@id([propertyId, amenityId])
+  @@index([amenityId])
+}
+
+// ---------------------------------------------------------------- media
+
+model PropertyMedia {
+  id            String       @id @default(cuid())
+  propertyId    String
+  property      Property     @relation(fields: [propertyId], references: [id], onDelete: Cascade)
+  kind          MediaKind
+  storagePath   String // Supabase Storage object path - never a binary blob
+  thumbnailPath String?
+  altText       String?
+  width         Int?
+  height        Int?
+  durationSec   Int?
+  byteSize      Int?
+  mimeType      String?
+  sortOrder     Int          @default(0)
+  uploadStatus  UploadStatus @default(PENDING)
+  createdAt     DateTime     @default(now())
+
+  @@index([propertyId, kind, sortOrder])
+}
+
+/// Private bucket only. Never exposed publicly, never listed in the API response.
+model PropertyDocument {
+  id           String     @id @default(cuid())
+  propertyId   String
+  property     Property   @relation(fields: [propertyId], references: [id], onDelete: Cascade)
+  label        String
+  storagePath  String
+  mimeType     String?
+  byteSize     Int?
+  uploadedById String?
+  uploadedBy   AdminUser? @relation(fields: [uploadedById], references: [id])
+  createdAt    DateTime   @default(now())
+
+  @@index([propertyId])
+}
+
+// ---------------------------------------------------------------- verification
+
+/// The record behind the "AL-MAKKAH VERIFIED" badge. Written only by an admin.
+model Verification {
+  id         String   @id @default(cuid())
+  propertyId String   @unique
+  property   Property @relation(fields: [propertyId], references: [id], onDelete: Cascade)
+
+  status       VerificationStatus @default(IN_PROGRESS)
+  verifiedById String?
+  verifiedBy   AdminUser?         @relation(fields: [verifiedById], references: [id])
+  verifiedAt   DateTime?
+
+  // Individual checks - the exact list is pending AL-MAKKAH's real procedure.
+  ownershipChecked Boolean @default(false)
+  documentsChecked Boolean @default(false)
+  locationChecked  Boolean @default(false)
+  mediaChecked     Boolean @default(false)
+  priceConfirmed   Boolean @default(false)
+  siteVisited      Boolean @default(false)
+
+  notes     String?  @db.Text
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+// ---------------------------------------------------------------- seller flow
+
+/// Raw public submission. Kept separate from Property so untrusted input never
+/// lands in the published table. Converted into a Property on approval.
+model SellerSubmission {
+  id     String           @id @default(cuid())
+  status SubmissionStatus @default(SUBMITTED)
+
+  sellerName       String
+  sellerPhone      String
+  sellerEmail      String?
+  preferredContact String?
+
+  type          PropertyType
+  purpose       Purpose      @default(SALE)
+  areaId        String?
+  addressLine   String?
+  expectedPrice Decimal?     @db.Decimal(14, 2)
+  areaValue     Decimal?     @db.Decimal(12, 3)
+  areaUnit      AreaUnit?
+  bedrooms      Int?
+  bathrooms     Int?
+  description   String?      @db.Text
+  mediaPaths    String[] // private bucket paths, admin-review only
+
+  rejectionReason String?
+  reviewedById    String?
+  reviewedBy      AdminUser? @relation(fields: [reviewedById], references: [id])
+
+  convertedPropertyId String?   @unique
+  convertedProperty   Property? @relation(fields: [convertedPropertyId], references: [id])
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([status, createdAt])
+}
+
+// ---------------------------------------------------------------- leads
+
+model Inquiry {
+  id     String        @id @default(cuid())
+  kind   InquiryKind
+  status InquiryStatus @default(NEW)
+
+  name    String
+  phone   String
+  email   String?
+  message String? @db.Text
+
+  propertyId String?
+  property   Property? @relation(fields: [propertyId], references: [id], onDelete: SetNull)
+  /// For VIEWING inquiries only.
+  preferredVisitAt DateTime?
+
+  handledById String?
+  handledBy   AdminUser? @relation(fields: [handledById], references: [id])
+
+  sourcePath String?
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  @@index([kind, status, createdAt])
+  @@index([propertyId])
+}
+
+model Testimonial {
+  id          String   @id @default(cuid())
+  authorName  String
+  authorTitle String?
+  quote       String   @db.Text
+  isPublished Boolean  @default(false)
+  sortOrder   Int      @default(0)
+  createdAt   DateTime @default(now())
+
+  @@index([isPublished, sortOrder])
+}
+
+// ---------------------------------------------------------------- admin
+
+/// Mirrors a Supabase Auth user. Roles are never read from the client.
+model AdminUser {
+  id          String    @id @default(cuid())
+  authUserId  String    @unique // Supabase auth.users.id
+  email       String    @unique
+  displayName String
+  role        AdminRole @default(ADMIN)
+  isActive    Boolean   @default(true)
+
+  verifications Verification[]
+  submissions   SellerSubmission[]
+  documents     PropertyDocument[]
+  inquiries     Inquiry[]
+  auditLogs     AuditLog[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+/// Append-only trail for every consequential admin action.
+model AuditLog {
+  id         String     @id @default(cuid())
+  actorId    String?
+  actor      AdminUser? @relation(fields: [actorId], references: [id])
+  action     String // e.g. "property.verify", "submission.reject"
+  entityType String
+  entityId   String
+  before     Json?
+  after      Json?
+  ipAddress  String?
+  createdAt  DateTime   @default(now())
+
+  @@index([entityType, entityId, createdAt])
+  @@index([actorId, createdAt])
+}
+
+/// Single-row table for AL-MAKKAH's own contact details (no agent accounts).
+model SiteSetting {
+  id            String   @id @default("singleton")
+  officeAddress String?
+  phone         String?
+  whatsapp      String?
+  email         String?
+  businessHours String?
+  facebookUrl   String?
+  instagramUrl  String?
+  youtubeUrl    String?
+  mapEmbedUrl   String?
+  updatedAt     DateTime @updatedAt
+}
