@@ -1,5 +1,6 @@
 /**
- * List, deactivate, reactivate or delete admin accounts.
+ * List, deactivate, reactivate, rename, change the password of, or delete
+ * admin accounts.
  *
  * Deactivating is the default advice: it revokes access immediately while
  * leaving the audit trail intact, so past actions still show who performed
@@ -103,11 +104,13 @@ console.log('\nWhat would you like to do?');
 console.log('  [1] Deactivate an account (revoke access, keep the audit trail)');
 console.log('  [2] Reactivate an account');
 console.log('  [3] Delete an account permanently');
-console.log('  [4] Nothing, just exit');
+console.log('  [4] Change the display name');
+console.log('  [5] Set a new password');
+console.log('  [6] Nothing, just exit');
 
-const choice = (await ask('Choose 1-4: ')).trim();
+const choice = (await ask('Choose a number: ')).trim();
 
-if (choice === '4' || choice === '') {
+if (choice === '6' || choice === '') {
   closePrompt();
   await prisma.$disconnect();
   process.exit(0);
@@ -173,6 +176,38 @@ if (choice === '1') {
     `\n${target.email} deleted.` +
       (error ? `\nWarning: the Supabase auth user could not be removed - ${error.message}` : ''),
   );
+} else if (choice === '4') {
+  const newName = (await ask('New display name: ')).trim();
+  if (newName.length < 2) {
+    console.error('A display name is required.');
+  } else {
+    await prisma.adminUser.update({
+      where: { id: target.id },
+      data: { displayName: newName },
+    });
+    console.log(`\nDisplay name changed to "${newName}".`);
+  }
+} else if (choice === '5') {
+  const newPassword = (await ask('New password (min 12 characters): ')).trim();
+  if (newPassword.length < 12) {
+    console.error('Password must be at least 12 characters. Nothing changed.');
+  } else {
+    const { error } = await supabase.auth.admin.updateUserById(
+      target.authUserId,
+      { password: newPassword },
+    );
+    if (error) {
+      console.error(`Could not change the password: ${error.message}`);
+    } else {
+      // Existing sessions keep working after a password change, so end them
+      // deliberately - the usual reason to change a password is that the old
+      // one is no longer trusted.
+      await supabase.auth.admin.signOut(target.authUserId).catch(() => {});
+      console.log(
+        `\nPassword changed for ${target.email}. Any signed-in sessions have been ended.`,
+      );
+    }
+  }
 } else {
   console.error('Unrecognised choice.');
 }

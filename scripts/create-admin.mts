@@ -32,15 +32,40 @@ if (!url || !serviceKey || !databaseUrl) {
   process.exit(1);
 }
 
-const rl = createInterface({ input: stdin, output: stdout });
+/**
+ * Prompting that works interactively and with piped input.
+ *
+ * A readline interface over a pipe closes as soon as the input ends, killing
+ * any question asked after the first await, so piped answers are read up front
+ * and served from a queue instead.
+ */
+const isInteractive = stdin.isTTY === true;
+const rl = isInteractive ? createInterface({ input: stdin, output: stdout }) : null;
 
-const email = (await rl.question('Admin email: ')).trim().toLowerCase();
-const displayName = (await rl.question('Display name: ')).trim();
-const password = (await rl.question('Password (min 12 characters): ')).trim();
+let pipedAnswers: string[] = [];
+if (!isInteractive) {
+  const chunks: Buffer[] = [];
+  for await (const chunk of stdin) chunks.push(Buffer.from(chunk));
+  pipedAnswers = Buffer.concat(chunks)
+    .toString('utf8')
+    .split(String.fromCharCode(10))
+    .map((line) => line.replace(String.fromCharCode(13), ''));
+}
+
+async function ask(prompt: string): Promise<string> {
+  if (rl) return rl.question(prompt);
+  const answer = pipedAnswers.shift() ?? '';
+  stdout.write(`${prompt}${answer}${String.fromCharCode(10)}`);
+  return answer;
+}
+
+const email = (await ask('Admin email: ')).trim().toLowerCase();
+const displayName = (await ask('Display name: ')).trim();
+const password = (await ask('Password (min 12 characters): ')).trim();
 const roleAnswer = (
-  await rl.question('Role [1] super admin  [2] admin (default 1): ')
+  await ask('Role [1] super admin  [2] admin (default 1): ')
 ).trim();
-rl.close();
+rl?.close();
 
 const role = roleAnswer === '2' ? 'ADMIN' : 'SUPER_ADMIN';
 
@@ -64,11 +89,55 @@ const prisma = new PrismaClient({
   adapter: new PrismaPg({ connectionString: databaseUrl }),
 });
 
+/*
+ * Sign-in needs BOTH an AdminUser row and a Supabase Auth user. If the row
+ * exists but its auth user is gone - removed from the Supabase dashboard, or
+ * by a script - the account looks present while being impossible to sign into,
+ * and this command used to dead-end on "already exists". Detect that and
+ * repair it instead of refusing.
+ */
 const existing = await prisma.adminUser.findUnique({ where: { email } });
+
 if (existing) {
-  console.error(`An admin with ${email} already exists.`);
+  const { data: found } = await supabase.auth.admin.getUserById(
+    existing.authUserId,
+  );
+
+  if (found?.user) {
+    console.error(
+      `An admin with ${email} already exists and can sign in.\n` +
+        'To rename it or set a new password, run: npm run admin:manage',
+    );
+    await prisma.$disconnect();
+    process.exit(1);
+  }
+
+  console.log(
+    `\nA record for ${email} exists but its login was missing.\n` +
+      'Re-creating the login and keeping the existing record.',
+  );
+
+  const { data: repaired, error: repairError } =
+    await supabase.auth.admin.createUser({
+      email,
+      password,
+      email_confirm: true,
+    });
+
+  if (repairError || !repaired.user) {
+    console.error(`Could not re-create the login: ${repairError?.message}`);
+    await prisma.$disconnect();
+    process.exit(1);
+  }
+
+  await prisma.adminUser.update({
+    where: { id: existing.id },
+    data: { authUserId: repaired.user.id, displayName, role, isActive: true },
+  });
+
+  console.log(`\nRepaired ${role} for ${email}. Sign in at /admin/login`);
   await prisma.$disconnect();
-  process.exit(1);
+  process.exit(0);
 }
 
 const { data, error } = await supabase.auth.admin.createUser({
