@@ -1,5 +1,6 @@
 import { PrismaPg } from '@prisma/adapter-pg';
 import { PrismaClient } from '../src/generated/prisma';
+import { HYDERABAD_AREAS } from '../src/lib/hyderabad-areas';
 
 /**
  * Reference data only. No properties, no testimonials, no fake business content.
@@ -8,54 +9,6 @@ import { PrismaClient } from '../src/generated/prisma';
  * recognised localities and is a starting point, not a fixed set - admins add
  * to the Area table as listings come in from places not listed here.
  */
-const HYDERABAD_AREAS = [
-  // Latifabad taluka
-  'Latifabad Unit 1',
-  'Latifabad Unit 2',
-  'Latifabad Unit 3',
-  'Latifabad Unit 4',
-  'Latifabad Unit 5',
-  'Latifabad Unit 6',
-  'Latifabad Unit 7',
-  'Latifabad Unit 8',
-  'Latifabad Unit 9',
-  'Latifabad Unit 10',
-  'Latifabad Unit 11',
-  'Latifabad Unit 12',
-  // Qasimabad taluka
-  'Qasimabad',
-  'Naseem Nagar',
-  'Wadhu Wah Road',
-  'Gulshan-e-Fatima',
-  'Revenue Housing Society',
-  'Kohsar Housing Society',
-  'Phase 1 Qasimabad',
-  'Phase 2 Qasimabad',
-  // City / Cantonment
-  'Hirabad',
-  'Saddar',
-  'Hyderabad Cantonment',
-  'Auto Bhan Road',
-  'Citizen Colony',
-  'Thandi Sarak',
-  'Gari Khata',
-  'Market Area',
-  'Tilak Incline',
-  'Risala Road',
-  'Preetabad',
-  'Hussainabad',
-  'Gulistan-e-Sarmast',
-  'Defence Housing Authority Hyderabad',
-  // Rural / periphery
-  'Hala Naka',
-  'Bypass',
-  'Phuleli',
-  'Tando Yousuf',
-  'Tando Jam',
-  'Site Area',
-  'Jamshoro Road',
-  'Bhittai Nagar',
-];
 
 /** Common amenities. Admin can extend from the dashboard. */
 const AMENITIES = [
