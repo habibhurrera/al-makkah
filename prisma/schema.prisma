@@ -298,6 +298,11 @@ model SellerSubmission {
   areaUnit      AreaUnit?
   bedrooms      Int?
   bathrooms     Int?
+  floors        Int?
+  /// Optional pin dropped by the seller. Advisory only - an admin confirms the
+  /// real location during verification; this is never trusted as-is.
+  latitude      Float?
+  longitude     Float?
   description   String?      @db.Text
   mediaPaths    String[] // private bucket paths, admin-review only
 

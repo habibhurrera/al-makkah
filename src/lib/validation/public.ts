@@ -91,6 +91,14 @@ export const sellerSubmissionSchema = z.object({
 
   bedrooms: z.coerce.number().int().min(0).max(50).optional(),
   bathrooms: z.coerce.number().int().min(0).max(50).optional(),
+  floors: z.coerce.number().int().min(0).max(20).optional(),
+
+  // Optional pin from the seller. Bounded to Sindh's rough envelope so a
+  // stray or malicious coordinate cannot place a Hyderabad listing elsewhere.
+  // Treated as advisory: an admin confirms the real location at verification.
+  latitude: z.coerce.number().min(23).max(29).optional(),
+  longitude: z.coerce.number().min(66).max(72).optional(),
+
   description: z.string().trim().max(4000).optional(),
 
   website: honeypot,
