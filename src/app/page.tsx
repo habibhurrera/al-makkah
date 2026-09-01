@@ -7,11 +7,12 @@ import { HYDERABAD_AREA_GROUPS } from '@/lib/hyderabad-areas';
 import {
   BUYER_STEPS,
   PLACEHOLDER_ABOUT,
-  SAMPLE_PROPERTIES,
   SELLER_STEPS,
   TESTIMONIALS,
   WHY_AL_MAKKAH,
 } from '@/lib/placeholder-content';
+import { getFeaturedProperties } from '@/server/queries/properties';
+import { EmptyState } from '@/components/ui/states';
 
 /**
  * Homepage.
@@ -75,7 +76,20 @@ function Steps({
   );
 }
 
-export default function HomePage() {
+export const revalidate = 300;
+
+/** Featured listings must never take the homepage down if the database is slow. */
+async function loadFeatured() {
+  try {
+    return await getFeaturedProperties(3);
+  } catch {
+    return [];
+  }
+}
+
+export default async function HomePage() {
+  const featured = await loadFeatured();
+
   return (
     <main>
       {/* Placeholder for the 3D hero built in a later phase. */}
@@ -186,17 +200,23 @@ export default function HomePage() {
               View all properties
             </ButtonLink>
           </div>
-          <PlaceholderNote>
-            The three cards below are <strong>sample listings, not real
-            properties</strong>. They exist so the card design can be reviewed
-            before the database is connected, and are removed as soon as real
-            listings are published.
-          </PlaceholderNote>
-          <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
-            {SAMPLE_PROPERTIES.map((property) => (
-              <PropertyCard key={property.id} property={property} />
-            ))}
-          </div>
+          {featured.length > 0 ? (
+            <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
+              {featured.map((property) => (
+                <PropertyCard key={property.id} property={property} />
+              ))}
+            </div>
+          ) : (
+            <EmptyState
+              title="No properties published yet"
+              description="AL-MAKKAH's first listings will appear here. If you have a property to sell or rent out, you can submit it now."
+              action={
+                <ButtonLink href="/sell" variant="secondary">
+                  Submit your property
+                </ButtonLink>
+              }
+            />
+          )}
         </Container>
       </Section>
 

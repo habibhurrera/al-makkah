@@ -1,5 +1,3 @@
-import type { PropertyCardData } from '@/types/property';
-
 /**
  * ============================================================================
  * PLACEHOLDER CONTENT — NOT AL-MAKKAH BUSINESS INFORMATION
@@ -79,71 +77,6 @@ export const SELLER_STEPS = [
   { step: 'Verification', body: 'Ownership, location and pricing are confirmed.' },
   { step: 'Listing published', body: 'Your property goes live on the site.' },
   { step: 'Buyer enquiries', body: 'We pass on serious buyers.' },
-];
-
-/**
- * SAMPLE LISTINGS — NOT REAL PROPERTIES.
- *
- * These exist only so the card and grid can be reviewed before the database is
- * connected. Each renders with a visible "Sample" marker on the page so no
- * visitor can mistake one for a listing. They are deleted the moment the
- * featured-properties query is wired up.
- */
-export const SAMPLE_PROPERTIES: PropertyCardData[] = [
-  {
-    id: 'sample-1',
-    slug: 'sample-listing-1',
-    refNo: 'SAMPLE-1',
-    title: 'Sample listing — 5 bedroom house',
-    purpose: 'SALE',
-    type: 'HOUSE',
-    price: 45_000_000,
-    areaValue: 500,
-    areaUnit: 'SQ_YD',
-    areaName: 'Latifabad Unit 7',
-    bedrooms: 5,
-    bathrooms: 5,
-    isVerified: true,
-    isFeatured: true,
-    hasVideo: true,
-    imageUrl: null,
-  },
-  {
-    id: 'sample-2',
-    slug: 'sample-listing-2',
-    refNo: 'SAMPLE-2',
-    title: 'Sample listing — residential plot',
-    purpose: 'SALE',
-    type: 'PLOT',
-    price: 9_500_000,
-    areaValue: 240,
-    areaUnit: 'SQ_YD',
-    areaName: 'Qasimabad',
-    bedrooms: null,
-    bathrooms: null,
-    isVerified: true,
-    isFeatured: false,
-    hasVideo: false,
-    imageUrl: null,
-  },
-  {
-    id: 'sample-3',
-    slug: 'sample-listing-3',
-    refNo: 'SAMPLE-3',
-    title: 'Sample listing — 3 bedroom flat',
-    purpose: 'RENT',
-    type: 'FLAT',
-    price: 85_000,
-    areaValue: 1_600,
-    areaUnit: 'SQ_FT',
-    areaName: 'Auto Bhan Road',
-    bedrooms: 3,
-    bathrooms: 3,
-    isVerified: false,
-    isFeatured: false,
-    hasVideo: true,
-    imageUrl: null,
-  },
 ];
 
 /**
