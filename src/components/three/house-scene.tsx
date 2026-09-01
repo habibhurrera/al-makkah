@@ -7,36 +7,45 @@ import { ease, stageById, stageProgress } from './construction-stages';
 import type { Quality } from './use-quality-tier';
 
 /**
- * A Hyderabad house, built procedurally.
+ * A premium two-storey bungalow, built procedurally.
  *
  * Deliberately not a downloaded model: marketplace GLBs arrive as one welded
  * mesh, which cannot be built up stage by stage. Generating the geometry means
- * every wall, column and window is a separate object whose appearance is driven
- * by scroll. The trade is realism for control, and control is the whole point
- * of this sequence.
+ * every slab, column, panel and pane is a separate object whose appearance is
+ * driven by scroll. The trade is photorealism for control, and control is the
+ * whole point of a sequence that has to run backwards and forwards at whatever
+ * speed the visitor scrolls.
  *
- * The proportions follow a typical 240-500 sq yd Hyderabad house: flat roof
- * with a parapet, boundary wall, gate, and a small front lawn.
+ * The design follows the brief: two storeys, pitched roof, floor-to-ceiling
+ * glazing in dark frames, warm timber cladding, a stone feature wall, a
+ * cantilevered first floor over the entrance, balcony, and a landscaped
+ * approach. The last stages fade the daylight to dusk and light the interior,
+ * which is what makes a render of a house look like a home.
  */
 
 const PALETTE = {
-  ground: '#c9c2b4',
-  soil: '#a89a86',
-  concrete: '#b8b3aa',
-  column: '#9c968c',
-  brick: '#b08968',
-  plaster: '#e8e3d9',
-  roof: '#8d8880',
-  glass: '#7fa8c9',
-  door: '#6b4f3a',
-  boundary: '#d8d2c6',
-  grass: '#7d9b63',
-  trunk: '#6b5340',
-  leaves: '#5f8a4f',
-  drive: '#a9a49a',
+  ground: '#8f8878',
+  soil: '#6f6555',
+  concrete: '#9a958c',
+  column: '#6f6b66',
+  block: '#a89d8d',
+  timber: '#a97443',
+  timberDark: '#8a5c34',
+  stone: '#7d7973',
+  plaster: '#efece6',
+  roof: '#26262a',
+  frame: '#1c1c1e',
+  glassDay: '#8fb4d0',
+  glassDusk: '#3d4a5c',
+  interior: '#ffc98a',
+  grass: '#4f6b3f',
+  paving: '#b9b4aa',
+  trunk: '#4a3a2c',
+  leaves: '#3f5c37',
+  water: '#4d7f8f',
 };
 
-/** Grows from the ground as its stage progresses. */
+/** Grows from its base as its stage progresses. */
 function Rise({
   progress,
   height,
@@ -65,6 +74,19 @@ type SceneProps = {
   distanceScale: number;
 };
 
+// Building dimensions, in metres. Named so the geometry below reads as a
+// building rather than a pile of numbers.
+const W = 16; // facade width
+const D = 11; // depth
+const GF = 3.6; // ground floor height
+const FF = 3.3; // first floor height
+const SLAB = 0.45;
+const BASE = 0.55; // plinth the house sits on
+const GF_Y = BASE + SLAB; // ground floor level
+const FF_Y = GF_Y + GF; // first floor level
+const ROOF_Y = FF_Y + FF; // eaves level
+const RIDGE = 3.2; // ridge height above the eaves
+
 export function HouseScene({
   progress,
   quality,
@@ -74,8 +96,8 @@ export function HouseScene({
 }: SceneProps) {
   const group = useRef<THREE.Group>(null);
   const sun = useRef<THREE.DirectionalLight>(null);
+  const sky = useRef<THREE.HemisphereLight>(null);
 
-  // Stage lookups are stable; resolving them once keeps the frame loop lean.
   const stages = useMemo(
     () => ({
       preparation: stageById('preparation'),
@@ -101,19 +123,23 @@ export function HouseScene({
     landscaping: ease(stageProgress(progress, stages.landscaping)),
   };
 
-  /**
-   * Camera and light follow scroll too: a slow orbit that closes in as the
-   * house completes, and a sun that climbs from low morning light to midday.
-   * Interpolating each frame rather than jumping keeps it smooth even when
-   * scroll events arrive unevenly.
-   */
+  // Dusk arrives with the landscaping, so the finished house is the only frame
+  // lit from within - the shot the whole sequence is building towards.
+  const dusk = ease(Math.max(0, (progress - 0.82) / 0.18));
+  const glassColor = useMemo(
+    () =>
+      new THREE.Color(PALETTE.glassDay).lerp(new THREE.Color(PALETTE.glassDusk), dusk),
+    [dusk],
+  );
+
   useFrame((state, delta) => {
     const t = Math.min(1, Math.max(0, progress));
-    // Wide enough that the whole plot reads as a house rather than a wall,
-    // closing in only slightly as the build completes.
-    const angle = -0.85 + t * 1.5;
-    const radius = (46 - t * 12) * distanceScale;
-    const height = (13 - t * 4.5) * distanceScale;
+
+    // Both ends of the orbit sit on the -Z side, so the glazed facade - the
+    // reason the house looks expensive - is what the visitor actually sees.
+    const angle = 3.65 - t * 0.95;
+    const radius = (58 - t * 22) * distanceScale;
+    const height = (23 - t * 12) * distanceScale;
 
     const target = new THREE.Vector3(
       Math.sin(angle) * radius,
@@ -121,56 +147,89 @@ export function HouseScene({
       Math.cos(angle) * radius,
     );
 
-    // Frame-rate independent smoothing.
     const lerp = 1 - Math.pow(0.001, delta);
     state.camera.position.lerp(target, lerp);
-    // Aiming left of the house pushes it into the right half of a wide frame,
-    // clear of the headline. On a phone the copy sits at the top instead, so
-    // the aim point rises and the house drops into the lower half.
-    state.camera.lookAt(focusX, focusY, 0);
+    state.camera.lookAt(focusX, focusY + 4, 0);
 
     if (sun.current) {
-      sun.current.position.set(-8 + t * 16, 10 + t * 8, 6 + t * 4);
+      // Sun swings across and drops towards the horizon as dusk comes in.
+      sun.current.position.set(-14 + t * 26, 22 - dusk * 12, 12 + t * 6);
+      sun.current.intensity = 2.6 - dusk * 0.9;
+      sun.current.color.setHex(dusk > 0.5 ? 0xffb27a : 0xfff2e0);
     }
+
+    if (sky.current) {
+      sky.current.intensity = 1.15 - dusk * 0.2;
+      sky.current.color.lerpColors(
+        new THREE.Color('#cfe0f0'),
+        new THREE.Color('#9d86ad'),
+        dusk,
+      );
+    }
+
+    // Background and fog follow the same day-to-dusk curve.
+    // Dusk sky stays luminous: a silhouette against black reads as nothing.
+    const bg = new THREE.Color('#141824').lerp(new THREE.Color('#6b4f74'), dusk);
+    state.scene.background = bg;
+    if (state.scene.fog) (state.scene.fog as THREE.Fog).color.copy(bg);
+
     if (group.current) {
       group.current.rotation.y = THREE.MathUtils.lerp(
         group.current.rotation.y,
-        t * 0.12,
+        t * 0.1,
         lerp,
       );
     }
   });
 
-  const wallHeight = 3.2;
-  const plaster = p.finishing;
+  const shadows = quality.shadows;
 
   return (
     <group ref={group}>
-      <hemisphereLight args={['#dfe6ee', '#b9ae9c', 1.1]} />
+      <hemisphereLight ref={sky} args={['#cfe0f0', '#6b6155', 1.15]} />
       <directionalLight
         ref={sun}
-        position={[-8, 10, 6]}
-        intensity={2.1}
-        castShadow={quality.shadows}
-        shadow-mapSize={[1024, 1024]}
+        position={[-14, 22, 12]}
+        intensity={2.6}
+        castShadow={shadows}
+        shadow-mapSize={[2048, 2048]}
+        shadow-camera-left={-30}
+        shadow-camera-right={30}
+        shadow-camera-top={30}
+        shadow-camera-bottom={-30}
       />
       {quality.tier === 'high' && (
-        <directionalLight position={[6, 6, -8]} intensity={0.4} />
+        <directionalLight position={[10, 8, -14]} intensity={0.35} color="#9fb6d6" />
+      )}
+
+      {/* Warm light spilling out of the house once it is lit. */}
+      {dusk > 0.05 && (
+        <>
+          <pointLight
+            position={[0, GF_Y + 1.8, -1]}
+            intensity={dusk * 40}
+            distance={26}
+            color={PALETTE.interior}
+          />
+          {quality.tier !== 'low' && (
+            <pointLight
+              position={[0, FF_Y + 1.6, -1]}
+              intensity={dusk * 26}
+              distance={22}
+              color={PALETTE.interior}
+            />
+          )}
+        </>
       )}
 
       {/* ---------------------------------------------------------- the plot */}
-      <mesh rotation={[-Math.PI / 2, 0, 0]} receiveShadow={quality.shadows}>
-        <planeGeometry args={[80, 80]} />
+      <mesh rotation={[-Math.PI / 2, 0, 0]} receiveShadow={shadows}>
+        <planeGeometry args={[120, 120]} />
         <meshStandardMaterial color={PALETTE.ground} roughness={1} />
       </mesh>
 
-      {/* Levelled ground, darker where the plot has been cleared. */}
-      <mesh
-        rotation={[-Math.PI / 2, 0, 0]}
-        position={[0, 0.01, 0]}
-        receiveShadow={quality.shadows}
-      >
-        <planeGeometry args={[22, 26]} />
+      <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, 0.01, 0]} receiveShadow={shadows}>
+        <planeGeometry args={[30, 34]} />
         <meshStandardMaterial
           color={PALETTE.soil}
           roughness={1}
@@ -179,245 +238,310 @@ export function HouseScene({
         />
       </mesh>
 
-      {/* Marking pegs at the corners once the plot is set out. */}
       {p.preparation > 0.4 &&
         quality.extras &&
         [
-          [-7, -9],
-          [7, -9],
-          [-7, 9],
-          [7, 9],
+          [-W / 2 - 1, -D / 2 - 1],
+          [W / 2 + 1, -D / 2 - 1],
+          [-W / 2 - 1, D / 2 + 1],
+          [W / 2 + 1, D / 2 + 1],
         ].map(([x, z]) => (
-          <mesh key={`${x}-${z}`} position={[x, 0.35, z]}>
-            <cylinderGeometry args={[0.06, 0.06, 0.7, 6]} />
-            <meshStandardMaterial color="#8c7b63" />
+          <mesh key={`peg-${x}-${z}`} position={[x, 0.4, z]}>
+            <cylinderGeometry args={[0.05, 0.05, 0.8, 6]} />
+            <meshStandardMaterial color="#c8a24a" />
           </mesh>
         ))}
 
       {/* -------------------------------------------------------- foundation */}
       <group visible={p.foundation > 0}>
-        <Rise progress={p.foundation} height={0.5}>
-          <mesh position={[0, 0.25, 0]} castShadow={quality.shadows} receiveShadow={quality.shadows}>
-            <boxGeometry args={[14, 0.5, 18]} />
+        <Rise progress={p.foundation} height={BASE}>
+          <mesh position={[0, BASE / 2, 0]} castShadow={shadows} receiveShadow={shadows}>
+            <boxGeometry args={[W + 3, BASE, D + 3]} />
             <meshStandardMaterial color={PALETTE.concrete} roughness={0.95} />
+          </mesh>
+        </Rise>
+        <Rise progress={p.foundation} height={SLAB}>
+          <mesh position={[0, BASE + SLAB / 2, 0]} castShadow={shadows} receiveShadow={shadows}>
+            <boxGeometry args={[W, SLAB, D]} />
+            <meshStandardMaterial color={PALETTE.concrete} roughness={0.9} />
           </mesh>
         </Rise>
       </group>
 
       {/* --------------------------------------------------------- structure */}
       <group visible={p.structure > 0}>
-        {[
-          [-6.5, -8.5],
-          [6.5, -8.5],
-          [-6.5, 0],
-          [6.5, 0],
-          [-6.5, 8.5],
-          [6.5, 8.5],
-          [0, -8.5],
-          [0, 8.5],
-        ].map(([x, z]) => (
-          <Rise key={`col-${x}-${z}`} progress={p.structure} height={wallHeight}>
+        {[-W / 2 + 0.4, -4, 1, W / 2 - 0.4].map((x) =>
+          [-D / 2 + 0.4, D / 2 - 0.4].map((z) => (
+            <Rise key={`c-${x}-${z}`} progress={p.structure} height={GF}>
+              <mesh position={[x, GF_Y + GF / 2, z]} castShadow={shadows}>
+                <boxGeometry args={[0.45, GF, 0.45]} />
+                <meshStandardMaterial color={PALETTE.column} roughness={0.85} />
+              </mesh>
+            </Rise>
+          )),
+        )}
+
+        {/* First floor slab, cantilevered over the entrance. */}
+        <group visible={p.structure > 0.55}>
+          <Rise progress={(p.structure - 0.55) / 0.45} height={SLAB}>
             <mesh
-              position={[x, 0.5 + wallHeight / 2, z]}
-              castShadow={quality.shadows}
+              position={[0, FF_Y - SLAB / 2, -0.6]}
+              castShadow={shadows}
+              receiveShadow={shadows}
             >
-              <boxGeometry args={[0.55, wallHeight, 0.55]} />
-              <meshStandardMaterial color={PALETTE.column} roughness={0.9} />
+              <boxGeometry args={[W, SLAB, D + 1.2]} />
+              <meshStandardMaterial color={PALETTE.concrete} roughness={0.9} />
             </mesh>
           </Rise>
-        ))}
+        </group>
 
-        {/* Beam ring tying the columns together. */}
-        <group visible={p.structure > 0.7}>
-          {[
-            { pos: [0, 0.5 + wallHeight, -8.5] as const, size: [13.5, 0.45, 0.5] as const },
-            { pos: [0, 0.5 + wallHeight, 8.5] as const, size: [13.5, 0.45, 0.5] as const },
-            { pos: [-6.5, 0.5 + wallHeight, 0] as const, size: [0.5, 0.45, 17.5] as const },
-            { pos: [6.5, 0.5 + wallHeight, 0] as const, size: [0.5, 0.45, 17.5] as const },
-          ].map((beam, index) => (
-            <mesh key={index} position={beam.pos} castShadow={quality.shadows}>
-              <boxGeometry args={beam.size} />
-              <meshStandardMaterial color={PALETTE.column} roughness={0.9} />
-            </mesh>
-          ))}
+        {/* First floor columns. */}
+        <group visible={p.structure > 0.75}>
+          {[-W / 2 + 0.4, W / 2 - 0.4].map((x) =>
+            [-D / 2 + 0.4, D / 2 - 0.4].map((z) => (
+              <mesh key={`c2-${x}-${z}`} position={[x, FF_Y + FF / 2, z]} castShadow={shadows}>
+                <boxGeometry args={[0.4, FF, 0.4]} />
+                <meshStandardMaterial color={PALETTE.column} roughness={0.85} />
+              </mesh>
+            )),
+          )}
         </group>
       </group>
 
       {/* ------------------------------------------------------------- walls
-          Built as segments with gaps, so window and door openings are real
-          holes rather than textures painted on a solid box. */}
+          Solid panels only. The gaps between them become the glazing, so the
+          openings are real rather than painted on. */}
       <group visible={p.walls > 0}>
-        {[
-          // Front wall, split around the door and two windows.
-          { pos: [-4.6, -8.5] as const, size: [4.3, 0.35] as const },
-          { pos: [0, -8.5] as const, size: [2.2, 0.35] as const },
-          { pos: [4.6, -8.5] as const, size: [4.3, 0.35] as const },
-          // Back wall.
-          { pos: [-3.5, 8.5] as const, size: [6.5, 0.35] as const },
-          { pos: [3.5, 8.5] as const, size: [6.5, 0.35] as const },
-        ].map((wall, index) => (
-          <Rise key={`wf-${index}`} progress={p.walls} height={wallHeight}>
-            <mesh
-              position={[wall.pos[0], 0.5 + wallHeight / 2, wall.pos[1]]}
-              castShadow={quality.shadows}
-              receiveShadow={quality.shadows}
-            >
-              <boxGeometry args={[wall.size[0], wallHeight, wall.size[1]]} />
-              <meshStandardMaterial
-                color={plaster > 0.2 ? PALETTE.plaster : PALETTE.brick}
-                roughness={0.85}
-              />
-            </mesh>
-          </Rise>
-        ))}
-
-        {/* Side walls. */}
-        {[-6.5, 6.5].map((x) => (
-          <Rise key={`ws-${x}`} progress={p.walls} height={wallHeight}>
-            <mesh
-              position={[x, 0.5 + wallHeight / 2, 0]}
-              castShadow={quality.shadows}
-              receiveShadow={quality.shadows}
-            >
-              <boxGeometry args={[0.35, wallHeight, 17]} />
-              <meshStandardMaterial
-                color={plaster > 0.2 ? PALETTE.plaster : PALETTE.brick}
-                roughness={0.85}
-              />
-            </mesh>
-          </Rise>
-        ))}
-      </group>
-
-      {/* -------------------------------------------------------------- roof */}
-      <group visible={p.roof > 0}>
-        <Rise progress={p.roof} height={0.4}>
-          <mesh
-            position={[0, 0.5 + wallHeight + 0.2, 0]}
-            castShadow={quality.shadows}
-            receiveShadow={quality.shadows}
-          >
-            <boxGeometry args={[14, 0.4, 18]} />
-            <meshStandardMaterial color={PALETTE.roof} roughness={0.95} />
+        {/* Ground floor: stone feature wall on the left, timber on the right. */}
+        <Rise progress={p.walls} height={GF}>
+          <mesh position={[-6, GF_Y + GF / 2, -D / 2]} castShadow={shadows} receiveShadow={shadows}>
+            <boxGeometry args={[4, GF, 0.4]} />
+            <meshStandardMaterial
+              color={p.finishing > 0.3 ? PALETTE.stone : PALETTE.block}
+              roughness={0.95}
+            />
           </mesh>
         </Rise>
 
-        {/* Parapet - the low wall around a flat roof, standard here. */}
-        <group visible={p.roof > 0.6}>
-          {[
-            { pos: [0, -8.9] as const, size: [14, 15] as const },
-            { pos: [0, 8.9] as const, size: [14, 15] as const },
-            { pos: [-6.9, 0] as const, size: [0.3, 18] as const },
-            { pos: [6.9, 0] as const, size: [0.3, 18] as const },
-          ].map((wall, index) => (
-            <mesh
-              key={`par-${index}`}
-              position={[wall.pos[0], 0.5 + wallHeight + 0.85, wall.pos[1]]}
-              castShadow={quality.shadows}
-            >
-              <boxGeometry
-                args={[
-                  index < 2 ? wall.size[0] : 0.3,
-                  0.9,
-                  index < 2 ? 0.3 : wall.size[1],
-                ]}
+        <Rise progress={p.walls} height={GF}>
+          <mesh position={[6.6, GF_Y + GF / 2, -D / 2]} castShadow={shadows} receiveShadow={shadows}>
+            <boxGeometry args={[2.8, GF, 0.4]} />
+            <meshStandardMaterial
+              color={p.finishing > 0.3 ? PALETTE.timber : PALETTE.block}
+              roughness={0.8}
+            />
+          </mesh>
+        </Rise>
+
+        {/* Side and rear walls. */}
+        {[-W / 2, W / 2].map((x) => (
+          <Rise key={`sw-${x}`} progress={p.walls} height={GF}>
+            <mesh position={[x, GF_Y + GF / 2, 0]} castShadow={shadows} receiveShadow={shadows}>
+              <boxGeometry args={[0.4, GF, D]} />
+              <meshStandardMaterial
+                color={p.finishing > 0.3 ? PALETTE.plaster : PALETTE.block}
+                roughness={0.9}
               />
-              <meshStandardMaterial color={PALETTE.plaster} roughness={0.9} />
             </mesh>
+          </Rise>
+        ))}
+        <Rise progress={p.walls} height={GF}>
+          <mesh position={[0, GF_Y + GF / 2, D / 2]} castShadow={shadows} receiveShadow={shadows}>
+            <boxGeometry args={[W, GF, 0.4]} />
+            <meshStandardMaterial
+              color={p.finishing > 0.3 ? PALETTE.plaster : PALETTE.block}
+              roughness={0.9}
+            />
+          </mesh>
+        </Rise>
+
+        {/* First floor: timber bay on the left, glazing centre and right. */}
+        <group visible={p.walls > 0.45}>
+          <Rise progress={(p.walls - 0.45) / 0.55} height={FF}>
+            <mesh
+              position={[-6.2, FF_Y + FF / 2, -D / 2 - 1.2]}
+              castShadow={shadows}
+              receiveShadow={shadows}
+            >
+              <boxGeometry args={[3.6, FF, 0.4]} />
+              <meshStandardMaterial
+                color={p.finishing > 0.3 ? PALETTE.timberDark : PALETTE.block}
+                roughness={0.8}
+              />
+            </mesh>
+          </Rise>
+
+          {[-W / 2, W / 2].map((x) => (
+            <Rise key={`sw2-${x}`} progress={(p.walls - 0.45) / 0.55} height={FF}>
+              <mesh position={[x, FF_Y + FF / 2, 0]} castShadow={shadows} receiveShadow={shadows}>
+                <boxGeometry args={[0.4, FF, D]} />
+                <meshStandardMaterial
+                  color={p.finishing > 0.3 ? PALETTE.plaster : PALETTE.block}
+                  roughness={0.9}
+                />
+              </mesh>
+            </Rise>
           ))}
+          <Rise progress={(p.walls - 0.45) / 0.55} height={FF}>
+            <mesh position={[0, FF_Y + FF / 2, D / 2]} castShadow={shadows} receiveShadow={shadows}>
+              <boxGeometry args={[W, FF, 0.4]} />
+              <meshStandardMaterial
+                color={p.finishing > 0.3 ? PALETTE.plaster : PALETTE.block}
+                roughness={0.9}
+              />
+            </mesh>
+          </Rise>
         </group>
       </group>
 
-      {/* --------------------------------------------------- windows and door */}
-      <group visible={p.openings > 0}>
-        {[
-          [-2.4, -8.5],
-          [2.4, -8.5],
-        ].map(([x, z]) => (
-          <mesh
-            key={`win-${x}`}
-            position={[x, 2.3, z]}
-            scale={[1, p.openings, 1]}
-          >
-            <boxGeometry args={[2, 1.5, 0.42]} />
-            <meshStandardMaterial
-              color={PALETTE.glass}
-              roughness={0.15}
-              metalness={0.35}
-            />
-          </mesh>
-        ))}
-
-        {[-3.5, 3.5].map((z) => (
-          <mesh
-            key={`wins-${z}`}
-            position={[-6.5, 2.3, z]}
-            scale={[1, p.openings, 1]}
-          >
-            <boxGeometry args={[0.42, 1.5, 2]} />
-            <meshStandardMaterial
-              color={PALETTE.glass}
-              roughness={0.15}
-              metalness={0.35}
-            />
-          </mesh>
-        ))}
-
-        {/* Front door. */}
-        <mesh position={[0, 1.55, -8.5]} scale={[1, p.openings, 1]}>
-          <boxGeometry args={[1.6, 2.1, 0.42]} />
-          <meshStandardMaterial color={PALETTE.door} roughness={0.7} />
-        </mesh>
-      </group>
-
-      {/* --------------------------------------------------- boundary and gate */}
-      <group visible={p.finishing > 0}>
-        {[
-          { pos: [0, -12.5] as const, size: [22, 0.3] as const, gap: true },
-          { pos: [0, 12.5] as const, size: [22, 0.3] as const, gap: false },
-          { pos: [-10.8, 0] as const, size: [0.3, 25] as const, gap: false },
-          { pos: [10.8, 0] as const, size: [0.3, 25] as const, gap: false },
-        ].map((wall, index) => (
-          <Rise key={`bd-${index}`} progress={p.finishing} height={2}>
-            {wall.gap ? (
-              // Front boundary leaves a gap for the gate.
-              <>
-                <mesh position={[-6.5, 1, wall.pos[1]]} castShadow={quality.shadows}>
-                  <boxGeometry args={[9, 2, 0.3]} />
-                  <meshStandardMaterial color={PALETTE.boundary} roughness={0.9} />
-                </mesh>
-                <mesh position={[6.5, 1, wall.pos[1]]} castShadow={quality.shadows}>
-                  <boxGeometry args={[9, 2, 0.3]} />
-                  <meshStandardMaterial color={PALETTE.boundary} roughness={0.9} />
-                </mesh>
-              </>
-            ) : (
+      {/* -------------------------------------------------------------- roof
+          A pitched roof: two slabs leaning against a ridge, with gable ends
+          filling the triangles at either side. */}
+      <group visible={p.roof > 0}>
+        <group scale={[1, p.roof, 1]} position={[0, ROOF_Y * (1 - p.roof), 0]}>
+          {[-1, 1].map((side) => {
+            const run = D / 2 + 0.9;
+            const pitch = Math.atan2(RIDGE, run);
+            const length = Math.hypot(run, RIDGE);
+            return (
               <mesh
-                position={[wall.pos[0], 1, wall.pos[1]]}
-                castShadow={quality.shadows}
+                key={`roof-${side}`}
+                position={[0, ROOF_Y + RIDGE / 2, (side * run) / 2 - 0.6]}
+                rotation={[side * pitch, 0, 0]}
+                castShadow={shadows}
+                receiveShadow={shadows}
               >
-                <boxGeometry args={[wall.size[0], 2, wall.size[1]]} />
-                <meshStandardMaterial color={PALETTE.boundary} roughness={0.9} />
+                <boxGeometry args={[W + 1.4, 0.28, length]} />
+                <meshStandardMaterial
+                  color={PALETTE.roof}
+                  roughness={0.55}
+                  metalness={0.15}
+                />
               </mesh>
-            )}
-          </Rise>
-        ))}
+            );
+          })}
 
-        {/* Gate. */}
-        <mesh position={[0, 0.9, -12.5]} scale={[1, p.finishing, 1]}>
-          <boxGeometry args={[4, 1.8, 0.16]} />
-          <meshStandardMaterial color="#5c5b58" metalness={0.5} roughness={0.5} />
+        </group>
+      </group>
+
+      {/* --------------------------------------------------- glazing and door */}
+      <group visible={p.openings > 0}>
+        {/* Ground floor glazing: the gap between stone and timber. */}
+        <mesh position={[0.4, GF_Y + GF / 2, -D / 2]} scale={[1, p.openings, 1]}>
+          <boxGeometry args={[8.2, GF - 0.3, 0.16]} />
+          <meshStandardMaterial
+            color={glassColor}
+            roughness={0.08}
+            metalness={0.75}
+            transparent
+            opacity={0.82}
+          />
+        </mesh>
+
+        {/* Interior glow plane, just behind the glass. */}
+        {dusk > 0.02 && (
+          <mesh position={[0.4, GF_Y + GF / 2, -D / 2 + 0.35]}>
+            <planeGeometry args={[8, GF - 0.5]} />
+            <meshBasicMaterial
+              color={PALETTE.interior}
+              transparent
+              opacity={dusk * 0.8}
+            />
+          </mesh>
+        )}
+
+        {/* First floor glazing across the cantilever. */}
+        <mesh position={[1.4, FF_Y + FF / 2, -D / 2 - 1.2]} scale={[1, p.openings, 1]}>
+          <boxGeometry args={[8.6, FF - 0.4, 0.16]} />
+          <meshStandardMaterial
+            color={glassColor}
+            roughness={0.08}
+            metalness={0.75}
+            transparent
+            opacity={0.82}
+          />
+        </mesh>
+
+        {dusk > 0.02 && (
+          <mesh position={[1.4, FF_Y + FF / 2, -D / 2 - 0.9]}>
+            <planeGeometry args={[8.4, FF - 0.6]} />
+            <meshBasicMaterial
+              color={PALETTE.interior}
+              transparent
+              opacity={dusk * 0.75}
+            />
+          </mesh>
+        )}
+
+        {/* Dark mullions - what makes glazing read as architecture. */}
+        {quality.extras &&
+          [-3.4, 0.4, 4.2].map((x) => (
+            <mesh key={`mul-${x}`} position={[x, GF_Y + GF / 2, -D / 2 - 0.06]} scale={[1, p.openings, 1]}>
+              <boxGeometry args={[0.12, GF - 0.3, 0.2]} />
+              <meshStandardMaterial color={PALETTE.frame} roughness={0.5} metalness={0.4} />
+            </mesh>
+          ))}
+
+        {/* Entrance door, recessed under the cantilever. */}
+        <mesh position={[-2.6, GF_Y + 1.25, -D / 2 - 0.02]} scale={[1, p.openings, 1]}>
+          <boxGeometry args={[1.5, 2.5, 0.18]} />
+          <meshStandardMaterial color={PALETTE.frame} roughness={0.4} metalness={0.3} />
         </mesh>
       </group>
 
-      {/* ------------------------------------------------------- landscaping */}
+      {/* ---------------------------------------------------------- finishing */}
+      <group visible={p.finishing > 0}>
+        {/* Balcony rail on the cantilever. */}
+        <group visible={p.finishing > 0.3}>
+          <mesh position={[6.4, FF_Y + 0.55, -D / 2 - 1.9]} castShadow={shadows}>
+            <boxGeometry args={[3.2, 1.1, 0.1]} />
+            <meshStandardMaterial
+              color={glassColor}
+              roughness={0.1}
+              metalness={0.6}
+              transparent
+              opacity={0.45}
+            />
+          </mesh>
+          <mesh position={[6.4, FF_Y + 1.12, -D / 2 - 1.9]} castShadow={shadows}>
+            <boxGeometry args={[3.3, 0.08, 0.14]} />
+            <meshStandardMaterial color={PALETTE.frame} metalness={0.6} roughness={0.4} />
+          </mesh>
+        </group>
+
+        {/* Entrance steps. */}
+        {[0, 1, 2].map((step) => (
+          <mesh
+            key={`step-${step}`}
+            position={[-2.6, BASE - step * 0.18 - 0.09, -D / 2 - 1.1 - step * 0.5]}
+            castShadow={shadows}
+            receiveShadow={shadows}
+            scale={[1, p.finishing, 1]}
+          >
+            <boxGeometry args={[4.2, 0.18, 0.5]} />
+            <meshStandardMaterial color={PALETTE.paving} roughness={0.9} />
+          </mesh>
+        ))}
+
+        {/* Timber cladding battens over the right-hand bay. */}
+        {quality.extras &&
+          p.finishing > 0.5 &&
+          Array.from({ length: 7 }, (_, i) => (
+            <mesh
+              key={`batten-${i}`}
+              position={[5.4 + i * 0.36, GF_Y + GF / 2, -D / 2 - 0.22]}
+              castShadow={shadows}
+            >
+              <boxGeometry args={[0.18, GF - 0.2, 0.08]} />
+              <meshStandardMaterial color={PALETTE.timberDark} roughness={0.85} />
+            </mesh>
+          ))}
+      </group>
+
+      {/* -------------------------------------------------------- landscaping */}
       <group visible={p.landscaping > 0}>
-        <mesh
-          rotation={[-Math.PI / 2, 0, 0]}
-          position={[0, 0.03, -10.6]}
-          receiveShadow={quality.shadows}
-        >
-          <planeGeometry args={[20, 3.6]} />
+        <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, 0.02, -12]} receiveShadow={shadows}>
+          <planeGeometry args={[30, 14]} />
           <meshStandardMaterial
             color={PALETTE.grass}
             roughness={1}
@@ -426,37 +550,78 @@ export function HouseScene({
           />
         </mesh>
 
-        {/* Driveway from the gate to the door. */}
-        <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, 0.04, -10.6]}>
-          <planeGeometry args={[3.4, 3.6]} />
-          <meshStandardMaterial
-            color={PALETTE.drive}
-            roughness={1}
-            transparent
-            opacity={p.landscaping}
-          />
-        </mesh>
+        {/* Stepping-stone path to the entrance. */}
+        {Array.from({ length: 6 }, (_, i) => (
+          <mesh
+            key={`slab-${i}`}
+            rotation={[-Math.PI / 2, 0, 0]}
+            position={[-2.6, 0.05, -7.5 - i * 1.7]}
+            receiveShadow={shadows}
+            scale={ease(Math.max(0, p.landscaping * 1.4 - i * 0.12))}
+          >
+            <planeGeometry args={[2.6, 1.2]} />
+            <meshStandardMaterial color={PALETTE.paving} roughness={0.95} />
+          </mesh>
+        ))}
 
+        {/* Garden lights along the path, lit at dusk. */}
+        {quality.extras &&
+          [-5.4, -5.4, 0.2, 0.2].map((x, i) => {
+            const z = -8.5 - (i % 2) * 4.5;
+            return (
+              <group key={`lamp-${i}`} position={[x, 0, z]} scale={p.landscaping}>
+                <mesh position={[0, 0.35, 0]}>
+                  <cylinderGeometry args={[0.05, 0.06, 0.7, quality.detail]} />
+                  <meshStandardMaterial color={PALETTE.frame} />
+                </mesh>
+                <mesh position={[0, 0.72, 0]}>
+                  <sphereGeometry args={[0.11, quality.detail, quality.detail]} />
+                  <meshBasicMaterial
+                    color={PALETTE.interior}
+                    transparent
+                    opacity={0.35 + dusk * 0.65}
+                  />
+                </mesh>
+              </group>
+            );
+          })}
+
+        {/* Planting. */}
         {quality.extras &&
           [
-            [-8.4, -10.4],
-            [8.4, -10.4],
-            [-8.4, 10.4],
-          ].map(([x, z], index) => (
+            [-11, -9, 1],
+            [11, -9, 1.1],
+            [-12, 4, 1.25],
+            [12, 5, 0.95],
+          ].map(([x, z, s], i) => (
             <group
-              key={`tree-${index}`}
+              key={`tree-${i}`}
               position={[x, 0, z]}
-              scale={ease(Math.max(0, p.landscaping * 1.2 - index * 0.15))}
+              scale={ease(Math.max(0, p.landscaping * 1.3 - i * 0.1)) * s}
             >
-              <mesh position={[0, 0.9, 0]} castShadow={quality.shadows}>
-                <cylinderGeometry args={[0.16, 0.22, 1.8, quality.detail]} />
+              <mesh position={[0, 1.3, 0]} castShadow={shadows}>
+                <cylinderGeometry args={[0.16, 0.24, 2.6, quality.detail]} />
                 <meshStandardMaterial color={PALETTE.trunk} roughness={1} />
               </mesh>
-              <mesh position={[0, 2.2, 0]} castShadow={quality.shadows}>
-                <sphereGeometry args={[1.15, quality.detail, quality.detail]} />
+              <mesh position={[0, 3.1, 0]} castShadow={shadows}>
+                <sphereGeometry args={[1.5, quality.detail, quality.detail]} />
                 <meshStandardMaterial color={PALETTE.leaves} roughness={1} />
               </mesh>
             </group>
+          ))}
+
+        {/* Low hedges either side of the path. */}
+        {quality.extras &&
+          [-4.6, -0.6].map((x) => (
+            <mesh
+              key={`hedge-${x}`}
+              position={[x, 0.3, -11]}
+              scale={[1, p.landscaping, 1]}
+              castShadow={shadows}
+            >
+              <boxGeometry args={[0.8, 0.6, 7]} />
+              <meshStandardMaterial color={PALETTE.leaves} roughness={1} />
+            </mesh>
           ))}
       </group>
     </group>

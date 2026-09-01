@@ -149,7 +149,7 @@ export function Hero3D() {
           <SceneBridge
             progressRef={progressRef}
             quality={quality}
-            focusX={isWide ? -9 : 0}
+            focusX={isWide ? -15 : 0}
             focusY={2.6}
             distanceScale={isWide ? 1 : 1.9}
           />
