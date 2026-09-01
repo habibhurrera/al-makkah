@@ -1,26 +1,189 @@
 @import "tailwindcss";
 
+/* ==========================================================================
+   AL-MAKKAH REAL ESTATE — design tokens
+   --------------------------------------------------------------------------
+   PLACEHOLDER BRANDING. Every value in the "brand" block below is a stand-in
+   chosen to be neutral and professional, NOT an AL-MAKKAH brand decision.
+   When the real logo and colours arrive, only the --brand-* and --font-*
+   values change; every component consumes the semantic tokens beneath them,
+   so nothing else in the codebase needs editing.
+   ========================================================================== */
+
+@theme {
+  /* --- brand scale — PLACEHOLDER, replace on receipt of brand colours ----- */
+  --color-brand-50: #faf7f0;
+  --color-brand-100: #f2ead6;
+  --color-brand-200: #e4d3a8;
+  --color-brand-300: #d4b872;
+  --color-brand-400: #c6a04b;
+  --color-brand-500: #b08933;
+  --color-brand-600: #936d28;
+  --color-brand-700: #745322;
+  --color-brand-800: #5a4121;
+  --color-brand-900: #45331d;
+
+  /* --- neutral scale — architectural warm grey ---------------------------- */
+  --color-ink-50: #f7f7f6;
+  --color-ink-100: #eeeeec;
+  --color-ink-200: #dcdcd8;
+  --color-ink-300: #bdbdb7;
+  --color-ink-400: #94948d;
+  --color-ink-500: #75756e;
+  --color-ink-600: #5c5c56;
+  --color-ink-700: #4a4a46;
+  --color-ink-800: #2e2e2b;
+  --color-ink-900: #1a1a18;
+  --color-ink-950: #0e0e0d;
+
+  /* --- status ------------------------------------------------------------- */
+  --color-success-500: #2f7d4f;
+  --color-success-50: #eef7f1;
+  --color-warning-500: #b4781a;
+  --color-warning-50: #fbf3e6;
+  --color-danger-500: #b03a32;
+  --color-danger-50: #fbeeed;
+
+  /* --- typography — PLACEHOLDER faces ------------------------------------- */
+  --font-sans: var(--font-app-sans), ui-sans-serif, system-ui, sans-serif;
+  --font-display: var(--font-app-display), Georgia, "Times New Roman", serif;
+  --font-mono: var(--font-app-mono), ui-monospace, monospace;
+
+  /* Type scale — 1.250 major third, tuned for long property descriptions.
+     Each entry is size / line-height / tracking. */
+  --text-xs: 0.75rem;
+  --text-xs--line-height: 1.4;
+  --text-sm: 0.875rem;
+  --text-sm--line-height: 1.5;
+  --text-base: 1rem;
+  --text-base--line-height: 1.65;
+  --text-lg: 1.125rem;
+  --text-lg--line-height: 1.6;
+  --text-xl: 1.375rem;
+  --text-xl--line-height: 1.45;
+  --text-2xl: 1.75rem;
+  --text-2xl--line-height: 1.3;
+  --text-3xl: 2.25rem;
+  --text-3xl--line-height: 1.2;
+  --text-3xl--letter-spacing: -0.01em;
+  --text-4xl: 3rem;
+  --text-4xl--line-height: 1.1;
+  --text-4xl--letter-spacing: -0.02em;
+  --text-5xl: 4rem;
+  --text-5xl--line-height: 1.05;
+  --text-5xl--letter-spacing: -0.03em;
+
+  /* --- shape --------------------------------------------------------------
+     Restrained radii. Property imagery reads as architecture; heavy rounding
+     makes listings look like consumer app cards. */
+  --radius-sm: 2px;
+  --radius-md: 4px;
+  --radius-lg: 8px;
+  --radius-xl: 12px;
+
+  /* --- elevation ----------------------------------------------------------
+     Low-contrast, large-spread shadows. No coloured glows. */
+  --shadow-card: 0 1px 2px rgb(14 14 13 / 0.04), 0 4px 16px rgb(14 14 13 / 0.06);
+  --shadow-card-hover: 0 2px 4px rgb(14 14 13 / 0.06), 0 12px 32px rgb(14 14 13 / 0.10);
+  --shadow-overlay: 0 8px 40px rgb(14 14 13 / 0.18);
+
+  /* --- motion -------------------------------------------------------------
+     One easing curve, three durations. Anything longer than 400ms on an
+     interface element is decoration, not feedback. */
+  --ease-standard: cubic-bezier(0.2, 0, 0, 1);
+  --ease-exit: cubic-bezier(0.4, 0, 1, 1);
+
+  /* --- layout -------------------------------------------------------------
+     Tailwind's default breakpoints, named here so they are reviewable.
+     Filters collapse below md; the property grid steps 1 → 2 → 3 columns. */
+  --breakpoint-sm: 40rem;
+  --breakpoint-md: 48rem;
+  --breakpoint-lg: 64rem;
+  --breakpoint-xl: 80rem;
+  --breakpoint-2xl: 96rem;
+}
+
+/* ==========================================================================
+   Semantic tokens — what components actually reference.
+   Components must never use --color-brand-500 directly; they use these.
+   That indirection is what makes a rebrand a one-file change.
+   ========================================================================== */
+
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  --surface: #ffffff;
+  --surface-raised: #ffffff;
+  --surface-sunken: var(--color-ink-50);
+  --surface-inverse: var(--color-ink-950);
+
+  --text: var(--color-ink-900);
+  --text-muted: var(--color-ink-500);
+  --text-subtle: var(--color-ink-400);
+  --text-inverse: var(--color-ink-50);
+
+  --border: var(--color-ink-200);
+  --border-strong: var(--color-ink-300);
+
+  --accent: var(--color-brand-500);
+  --accent-hover: var(--color-brand-600);
+  --accent-text: #ffffff;
+  --accent-subtle: var(--color-brand-50);
+
+  --focus-ring: var(--color-ink-900);
+
+  --duration-fast: 120ms;
+  --duration-normal: 220ms;
+  --duration-slow: 400ms;
+
+  /* Max width of readable prose - property descriptions, about copy. */
+  --measure: 68ch;
+
+  color-scheme: light;
 }
 
 @theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+  --color-surface: var(--surface);
+  --color-surface-raised: var(--surface-raised);
+  --color-surface-sunken: var(--surface-sunken);
+  --color-surface-inverse: var(--surface-inverse);
+  --color-text: var(--text);
+  --color-text-muted: var(--text-muted);
+  --color-text-subtle: var(--text-subtle);
+  --color-text-inverse: var(--text-inverse);
+  --color-border: var(--border);
+  --color-border-strong: var(--border-strong);
+  --color-accent: var(--accent);
+  --color-accent-hover: var(--accent-hover);
+  --color-accent-text: var(--accent-text);
+  --color-accent-subtle: var(--accent-subtle);
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
-}
+/* ==========================================================================
+   Base
+   ========================================================================== */
 
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  background-color: var(--surface);
+  color: var(--text);
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+}
+
+/* Visible, consistent focus for keyboard users on every interactive element. */
+:where(a, button, input, select, textarea, summary, [tabindex]):focus-visible {
+  outline: 2px solid var(--focus-ring);
+  outline-offset: 2px;
+  border-radius: var(--radius-sm);
+}
+
+/* Reduced motion is honoured globally. The 3D hero has its own static
+   fallback in addition to this; see src/components/three/. */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
 }
