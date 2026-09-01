@@ -104,7 +104,15 @@ export function PropertyRow({ property }: { property: AdminPropertyView }) {
 
         {property.mediaCount === 0 && isPublished && (
           <p className="text-sm text-warning-500">
-            This listing is live with no photos. Buyers skip listings without images.
+            This listing is live with no photos. Buyers skip listings without
+            images —{' '}
+            <Link
+              href={`/admin/properties/${property.id}/media`}
+              className="underline underline-offset-4"
+            >
+              add some now
+            </Link>
+            .
           </p>
         )}
 
@@ -141,6 +149,13 @@ export function PropertyRow({ property }: { property: AdminPropertyView }) {
               {property.isFeatured ? 'Unfeature' : 'Feature'}
             </Button>
           </form>
+
+          <Link
+            href={`/admin/properties/${property.id}/media`}
+            className="inline-flex h-9 items-center justify-center rounded-md border border-border-strong px-3 text-sm font-medium hover:bg-surface-sunken"
+          >
+            {property.mediaCount === 0 ? 'Add photos' : 'Manage photos'}
+          </Link>
 
           <Button
             size="sm"
