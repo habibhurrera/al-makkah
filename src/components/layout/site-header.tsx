@@ -27,11 +27,6 @@ export function SiteHeader() {
   const pathname = usePathname();
   const [isOpen, setIsOpen] = useState(false);
 
-  // Close the mobile menu on navigation, otherwise it stays open over the new page.
-  useEffect(() => {
-    setIsOpen(false);
-  }, [pathname]);
-
   // Prevent the page scrolling behind the open mobile menu.
   useEffect(() => {
     document.body.style.overflow = isOpen ? 'hidden' : '';
@@ -116,6 +111,7 @@ export function SiteHeader() {
                 <div key={item.href} className="py-2 border-b border-border last:border-0">
                   <Link
                     href={item.href}
+                    onClick={() => setIsOpen(false)}
                     className="block py-2 font-display text-2xl"
                   >
                     {item.label}
@@ -126,6 +122,7 @@ export function SiteHeader() {
                         <Link
                           key={child.href}
                           href={child.href}
+                          onClick={() => setIsOpen(false)}
                           className="py-2 text-text-muted"
                         >
                           {child.label}
