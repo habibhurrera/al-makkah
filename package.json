@@ -14,7 +14,8 @@
     "db:studio": "prisma studio",
     "db:seed": "tsx prisma/seed.ts",
     "postinstall": "prisma generate",
-    "db:storage": "tsx scripts/setup-storage.mts"
+    "db:storage": "tsx scripts/setup-storage.mts",
+    "admin:create": "tsx scripts/create-admin.mts"
   },
   "dependencies": {
     "@prisma/adapter-pg": "^7.10.0",

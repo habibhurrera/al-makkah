@@ -13,6 +13,10 @@ import { NextResponse, type NextRequest } from 'next/server';
  * privileged data.
  */
 export async function middleware(request: NextRequest) {
+  // Layouts cannot read the current path directly; expose it as a header so
+  // the admin layout can leave the login page reachable while signed out.
+  request.headers.set('x-pathname', request.nextUrl.pathname);
+
   let response = NextResponse.next({ request });
 
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL;

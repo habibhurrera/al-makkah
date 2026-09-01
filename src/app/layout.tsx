@@ -1,8 +1,6 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono, Playfair_Display } from "next/font/google";
 import "./globals.css";
-import { SiteHeader } from "@/components/layout/site-header";
-import { SiteFooter } from "@/components/layout/site-footer";
 
 /**
  * PLACEHOLDER TYPEFACES. Not an AL-MAKKAH brand decision — these are stand-ins
@@ -43,19 +41,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
       lang="en"
       className={`${appSans.variable} ${appDisplay.variable} ${appMono.variable} h-full antialiased`}
     >
-      <body className="min-h-full flex flex-col">
-        <a
-          href="#content"
-          className="sr-only focus:not-sr-only focus:absolute focus:z-[100] focus:m-3 focus:rounded-md focus:bg-surface focus:px-4 focus:py-2 focus:shadow-overlay"
-        >
-          Skip to content
-        </a>
-        <SiteHeader />
-        <div id="content" className="flex flex-col flex-1">
-          {children}
-        </div>
-        <SiteFooter />
-      </body>
+      <body className="min-h-full flex flex-col">{children}</body>
     </html>
   );
 }
