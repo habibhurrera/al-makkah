@@ -151,6 +151,13 @@ export function PropertyRow({ property }: { property: AdminPropertyView }) {
           </form>
 
           <Link
+            href={`/admin/properties/${property.id}/edit`}
+            className="inline-flex h-9 items-center justify-center rounded-md border border-border-strong px-3 text-sm font-medium hover:bg-surface-sunken"
+          >
+            Edit
+          </Link>
+
+          <Link
             href={`/admin/properties/${property.id}/media`}
             className="inline-flex h-9 items-center justify-center rounded-md border border-border-strong px-3 text-sm font-medium hover:bg-surface-sunken"
           >

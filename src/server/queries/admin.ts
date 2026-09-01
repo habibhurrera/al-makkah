@@ -151,3 +151,58 @@ export async function getSettingsForAdmin() {
   });
   return settings;
 }
+
+/** Everything the edit form needs, including current amenity selections. */
+export async function getPropertyForEdit(propertyId: string) {
+  await requireAdmin();
+
+  const property = await prisma.property.findUnique({
+    where: { id: propertyId },
+    select: {
+      id: true,
+      refNo: true,
+      slug: true,
+      title: true,
+      description: true,
+      purpose: true,
+      type: true,
+      price: true,
+      areaValue: true,
+      areaUnit: true,
+      areaId: true,
+      addressLine: true,
+      latitude: true,
+      longitude: true,
+      bedrooms: true,
+      bathrooms: true,
+      floors: true,
+      parking: true,
+      yearBuilt: true,
+      furnishing: true,
+      facing: true,
+      hasElectricity: true,
+      hasGas: true,
+      hasWater: true,
+      hasSecurity: true,
+      status: true,
+      amenities: { select: { amenityId: true } },
+    },
+  });
+
+  if (!property) return null;
+
+  return {
+    ...property,
+    price: Number(property.price),
+    areaValue: Number(property.areaValue),
+    amenityIds: property.amenities.map((entry) => entry.amenityId),
+  };
+}
+
+export async function getAmenityOptions() {
+  await requireAdmin();
+  return prisma.amenity.findMany({
+    select: { id: true, name: true },
+    orderBy: { name: 'asc' },
+  });
+}
