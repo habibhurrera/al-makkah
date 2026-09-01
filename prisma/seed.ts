@@ -1,6 +1,11 @@
+import { config as loadEnv } from 'dotenv';
 import { PrismaPg } from '@prisma/adapter-pg';
 import { PrismaClient } from '../src/generated/prisma';
 import { HYDERABAD_AREAS } from '../src/lib/hyderabad-areas';
+
+// The seed runs outside Next.js, which is what loads .env.local normally.
+loadEnv({ path: '.env.local', quiet: true });
+loadEnv({ quiet: true });
 
 /**
  * Reference data only. No properties, no testimonials, no fake business content.

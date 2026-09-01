@@ -1,5 +1,10 @@
-import 'dotenv/config';
+import { config as loadEnv } from 'dotenv';
 import { defineConfig } from 'prisma/config';
+
+// Next.js reads .env.local; the Prisma CLI does not, so load it explicitly.
+// .env stays as a fallback for CI, where variables come from the environment.
+loadEnv({ path: '.env.local', quiet: true });
+loadEnv({ quiet: true });
 
 /**
  * Prisma 7 moved connection URLs out of schema.prisma.
