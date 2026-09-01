@@ -60,5 +60,26 @@ export function publicEnv() {
   return parsed.data;
 }
 
-export const siteUrl =
-  process.env.NEXT_PUBLIC_SITE_URL ?? 'http://localhost:3000';
+/**
+ * The site's public origin, used for canonical URLs, Open Graph images and the
+ * sitemap.
+ *
+ * NEXT_PUBLIC_SITE_URL wins when it is set to a real domain. If it is missing
+ * or still points at localhost (easy to leave behind when copying a local env
+ * file into a host), Vercel's own production URL is used instead - so a
+ * deployed sitemap can never advertise localhost to search engines.
+ */
+function resolveSiteUrl(): string {
+  const configured = process.env.NEXT_PUBLIC_SITE_URL?.replace(/\/$/, '');
+  if (configured && !configured.includes('localhost')) return configured;
+
+  const vercelProduction = process.env.VERCEL_PROJECT_PRODUCTION_URL;
+  if (vercelProduction) return `https://${vercelProduction}`;
+
+  const vercelDeployment = process.env.VERCEL_URL;
+  if (vercelDeployment) return `https://${vercelDeployment}`;
+
+  return configured ?? 'http://localhost:3000';
+}
+
+export const siteUrl = resolveSiteUrl();
