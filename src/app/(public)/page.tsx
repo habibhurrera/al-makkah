@@ -3,6 +3,7 @@ import { ButtonLink } from '@/components/ui/button';
 import { Card, CardBody } from '@/components/ui/card';
 import { Container, Section, SectionHeading } from '@/components/ui/layout';
 import { PropertyCard } from '@/components/property/property-card';
+import { Hero } from '@/components/three/hero';
 import { HYDERABAD_AREA_GROUPS } from '@/lib/hyderabad-areas';
 import {
   BUYER_STEPS,
@@ -92,41 +93,7 @@ export default async function HomePage() {
 
   return (
     <main>
-      {/* Placeholder for the 3D hero built in a later phase. */}
-      <section className="bg-surface-inverse text-text-inverse">
-        <Container>
-          <div className="min-h-[70vh] flex flex-col justify-center gap-8 py-20">
-            <div className="flex flex-col gap-5 max-w-3xl">
-              <p className="text-xs uppercase tracking-[0.22em] text-ink-400">
-                Hyderabad, Sindh
-              </p>
-              <h1 className="font-display text-4xl md:text-5xl text-balance">
-                Building Dreams. Finding Homes.
-              </h1>
-              <p className="text-lg text-ink-300 max-w-[46ch] text-pretty">
-                Buy, sell and rent property across Hyderabad with a company that
-                verifies what it lists.
-              </p>
-            </div>
-            <div className="flex flex-wrap gap-3">
-              <ButtonLink href="/buy" variant="inverse" size="lg">
-                Explore Properties
-              </ButtonLink>
-              <ButtonLink
-                href="/sell"
-                size="lg"
-                className="border border-ink-700 text-text-inverse hover:bg-ink-800 bg-transparent"
-              >
-                Sell Your Property
-              </ButtonLink>
-            </div>
-            <p className="text-xs text-ink-500 pt-4">
-              Placeholder hero — the scroll-driven 3D construction sequence is
-              built in a later phase.
-            </p>
-          </div>
-        </Container>
-      </section>
+      <Hero />
 
       {/* ---------------------------------------------------------------- about */}
       <Section>
