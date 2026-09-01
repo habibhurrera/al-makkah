@@ -5,7 +5,7 @@ import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { Card, CardBody } from '@/components/ui/card';
 import { Field, Input, Select, Textarea } from '@/components/ui/field';
-import { updateProperty } from '@/server/actions/property';
+import { createProperty, updateProperty } from '@/server/actions/property';
 import { AREA_UNIT_LABEL, AREA_UNIT_ORDER } from '@/lib/units';
 import { PROPERTY_TYPE_LABEL } from '@/types/property';
 import type { ActionResult } from '@/server/actions/admin';
@@ -51,17 +51,27 @@ const TYPES = [
   'COMMERCIAL',
 ] as const;
 
+/**
+ * One form for both jobs.
+ *
+ * Creating and editing take the same fields, so they share a component - two
+ * near-identical forms would inevitably drift apart, and a field added to one
+ * but not the other is the kind of bug nobody notices for months.
+ */
 export function PropertyEditForm({
   property,
   areas,
   amenities,
+  mode = 'edit',
 }: {
   property: EditableProperty;
   areas: { id: string; name: string }[];
   amenities: { id: string; name: string }[];
+  mode?: 'create' | 'edit';
 }) {
+  const isCreate = mode === 'create';
   const [state, action, pending] = useActionState<State, FormData>(
-    updateProperty,
+    isCreate ? createProperty : updateProperty,
     null,
   );
   const [type, setType] = useState(property.type);
@@ -70,7 +80,7 @@ export function PropertyEditForm({
 
   return (
     <form action={action} className="flex flex-col gap-8">
-      <input type="hidden" name="propertyId" value={property.id} />
+      {!isCreate && <input type="hidden" name="propertyId" value={property.id} />}
 
       {state && (
         <p
@@ -343,7 +353,13 @@ export function PropertyEditForm({
 
       <div className="flex flex-wrap items-center gap-3">
         <Button type="submit" size="lg" aria-busy={pending} disabled={pending}>
-          {pending ? 'Saving…' : 'Save changes'}
+          {pending
+            ? isCreate
+              ? 'Creating…'
+              : 'Saving…'
+            : isCreate
+              ? 'Create listing and add photos'
+              : 'Save changes'}
         </Button>
         <Link
           href="/admin/properties"
@@ -352,9 +368,9 @@ export function PropertyEditForm({
           Back to properties
         </Link>
         <p className="text-sm text-text-subtle w-full">
-          Reference {property.refNo} and the web address stay the same — changing
-          the address would break links already shared with buyers. Publishing
-          and verification are handled separately on the Properties page.
+          {isCreate
+            ? 'The listing is created as a draft and is not public. You will be taken straight to the photo page next, then publish it from Properties when it is ready.'
+            : `Reference ${property.refNo} and the web address stay the same — changing the address would break links already shared with buyers. Publishing and verification are handled separately on the Properties page.`}
         </p>
       </div>
     </form>

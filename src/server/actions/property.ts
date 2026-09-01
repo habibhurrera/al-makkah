@@ -1,10 +1,11 @@
 'use server';
 
 import { revalidatePath } from 'next/cache';
+import { redirect } from 'next/navigation';
 import { headers } from 'next/headers';
 import { prisma } from '@/lib/db';
 import { requireAdmin } from '@/server/auth';
-import { propertyEditSchema } from '@/lib/validation/admin';
+import { propertyCreateSchema, propertyEditSchema } from '@/lib/validation/admin';
 import { toSqFt } from '@/lib/units';
 import type { ActionResult } from '@/server/actions/admin';
 
@@ -150,4 +151,120 @@ export async function updateProperty(
   revalidatePath('/');
 
   return { ok: true, message: 'Listing updated.' };
+}
+
+/**
+ * Creates a listing directly, for a property AL-MAKKAH takes on in the office
+ * with no public submission behind it.
+ *
+ * The listing is created as an unpublished, unverified DRAFT - identical to
+ * one converted from a submission - and the admin is sent straight to its
+ * media page, because a listing without photos is not worth publishing.
+ */
+export async function createProperty(
+  _previous: ActionResult | null,
+  formData: FormData,
+): Promise<ActionResult & { fieldErrors?: Record<string, string> }> {
+  const admin = await requireAdmin();
+
+  const raw = {
+    ...Object.fromEntries(formData.entries()),
+    amenityIds: formData.getAll('amenityIds').map(String),
+  };
+
+  const parsed = propertyCreateSchema.safeParse(raw);
+  if (!parsed.success) {
+    const fieldErrors: Record<string, string> = {};
+    for (const issue of parsed.error.issues) {
+      const key = String(issue.path[0] ?? 'form');
+      fieldErrors[key] ??= issue.message;
+    }
+    return { ok: false, message: 'Please check the highlighted fields.', fieldErrors };
+  }
+
+  const data = parsed.data;
+
+  const area = await prisma.area.findFirst({
+    where: { id: data.areaId, isActive: true },
+    select: { id: true },
+  });
+  if (!area) return { ok: false, message: 'That area is not available.' };
+
+  const count = await prisma.property.count();
+  const refNo = `AMK-${1000 + count + 1}`;
+  const slug = `${data.title
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-|-$/g, '')
+    .slice(0, 70)}-${refNo.toLowerCase()}`;
+
+  const ip = (await headers()).get('x-forwarded-for')?.split(',')[0]?.trim() ?? null;
+
+  let propertyId: string;
+  try {
+    const created = await prisma.$transaction(async (tx) => {
+      const property = await tx.property.create({
+        data: {
+          refNo,
+          slug,
+          title: data.title,
+          description: data.description,
+          purpose: data.purpose,
+          type: data.type,
+          price: data.price,
+          areaValue: data.areaValue,
+          areaUnit: data.areaUnit,
+          areaSqFt: toSqFt(data.areaValue, data.areaUnit),
+          areaId: data.areaId,
+          addressLine: data.addressLine,
+          latitude: data.latitude,
+          longitude: data.longitude,
+          bedrooms: data.bedrooms,
+          bathrooms: data.bathrooms,
+          floors: data.floors,
+          parking: data.parking,
+          yearBuilt: data.yearBuilt,
+          furnishing: data.furnishing,
+          facing: data.facing,
+          hasElectricity: !!data.hasElectricity,
+          hasGas: !!data.hasGas,
+          hasWater: !!data.hasWater,
+          hasSecurity: !!data.hasSecurity,
+          status: 'DRAFT',
+          verificationStatus: 'UNVERIFIED',
+        },
+        select: { id: true },
+      });
+
+      if (data.amenityIds && data.amenityIds.length > 0) {
+        await tx.propertyAmenity.createMany({
+          data: data.amenityIds.map((amenityId) => ({
+            propertyId: property.id,
+            amenityId,
+          })),
+          skipDuplicates: true,
+        });
+      }
+
+      await tx.auditLog.create({
+        data: {
+          actorId: admin.adminId,
+          action: 'property.create',
+          entityType: 'Property',
+          entityId: property.id,
+          after: { refNo, title: data.title, price: data.price },
+          ipAddress: ip,
+        },
+      });
+
+      return property;
+    });
+    propertyId = created.id;
+  } catch {
+    return { ok: false, message: 'Could not create the listing. Please try again.' };
+  }
+
+  revalidatePath('/admin/properties');
+  // redirect() throws by design, so it must sit outside the try above.
+  redirect(`/admin/properties/${propertyId}/media?created=1`);
 }

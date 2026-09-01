@@ -27,9 +27,8 @@ const optionalInt = (min: number, max: number) =>
     .optional()
     .transform((value) => (value === '' || value === undefined ? null : value));
 
-export const propertyEditSchema = z.object({
-  propertyId: z.cuid(),
-
+/** Fields shared by creating and editing a listing. */
+const propertyFields = {
   title: z.string().trim().min(5, 'Give the listing a title').max(140),
   description: z.string().trim().min(20, 'Write a description').max(6000),
 
@@ -81,6 +80,22 @@ export const propertyEditSchema = z.object({
   hasSecurity: z.coerce.boolean().optional(),
 
   amenityIds: z.array(z.cuid()).optional(),
+};
+
+export const propertyEditSchema = z.object({
+  propertyId: z.cuid(),
+  ...propertyFields,
 });
 
+/**
+ * Creating a listing directly - for a property AL-MAKKAH takes on in the
+ * office, with no public submission behind it. Same fields, no id yet.
+ *
+ * Note what is still absent: status and verificationStatus. A listing created
+ * here starts as an unpublished, unverified draft exactly like one converted
+ * from a submission, so the same publish and verify decisions apply.
+ */
+export const propertyCreateSchema = z.object(propertyFields);
+
 export type PropertyEditInput = z.infer<typeof propertyEditSchema>;
+export type PropertyCreateInput = z.infer<typeof propertyCreateSchema>;
