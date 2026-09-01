@@ -9,27 +9,40 @@ import { AreaUnit } from '@/generated/prisma';
  * value used ONLY for filtering and sorting, so a 2-kanal plot and a 400 sq ft
  * flat can be compared against each other.
  *
- * MARLA/KANAL note: Pakistan has two conventions. The modern one (1 marla =
- * 225 sq ft, 1 kanal = 4500 sq ft) is what property portals use today; the
- * older colonial one is 272.25 / 5445. We use the modern convention. If
- * AL-MAKKAH quotes the old measure, change SQ_FT_PER_UNIT and backfill.
+ * AL-MAKKAH quotes in square yards, which is the Hyderabad norm. The other
+ * units stay available for the occasional listing that arrives measured
+ * differently. Marla/Kanal use the modern convention (225 / 4500 sq ft) rather
+ * than the old colonial 272.25 / 5445 - nothing in Sindh depends on it.
  */
 export const SQ_FT_PER_UNIT: Record<AreaUnit, number> = {
-  SQ_FT: 1,
   SQ_YD: 9,
+  SQ_FT: 1,
+  SQ_M: 10.7639104,
   MARLA: 225,
   KANAL: 4500,
   ACRE: 43560,
-  SQ_M: 10.7639104,
 };
 
+/** Pre-selected in the upload form. */
+export const DEFAULT_AREA_UNIT: AreaUnit = 'SQ_YD';
+
+/** Dropdown order - the unit AL-MAKKAH actually uses comes first. */
+export const AREA_UNIT_ORDER: AreaUnit[] = [
+  'SQ_YD',
+  'SQ_FT',
+  'SQ_M',
+  'MARLA',
+  'KANAL',
+  'ACRE',
+];
+
 export const AREA_UNIT_LABEL: Record<AreaUnit, string> = {
-  SQ_FT: 'sq ft',
   SQ_YD: 'sq yd',
+  SQ_FT: 'sq ft',
+  SQ_M: 'sq m',
   MARLA: 'Marla',
   KANAL: 'Kanal',
   ACRE: 'Acre',
-  SQ_M: 'sq m',
 };
 
 /** Canonical square-foot value written to Property.areaSqFt. */

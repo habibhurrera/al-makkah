@@ -31,13 +31,14 @@ enum PropertyType {
 
 /// Unit chosen per listing at upload time. Display uses this unit verbatim;
 /// filtering and sorting use the derived Property.areaSqFt.
+/// AL-MAKKAH quotes in square yards; the rest are fallbacks for odd listings.
 enum AreaUnit {
-  SQ_FT
   SQ_YD
+  SQ_FT
+  SQ_M
   MARLA
   KANAL
   ACRE
-  SQ_M
 }
 
 enum ListingStatus {
@@ -139,7 +140,7 @@ model Property {
 
   /// Area exactly as entered by the uploader, in their chosen unit.
   areaValue Decimal  @db.Decimal(12, 3)
-  areaUnit  AreaUnit
+  areaUnit  AreaUnit @default(SQ_YD)
   /// Derived from areaValue + areaUnit on write. Never entered by hand.
   /// Exists solely so cross-listing filtering and sorting compare like with like.
   areaSqFt  Decimal  @db.Decimal(14, 2)
@@ -162,6 +163,11 @@ model Property {
   addressLine  String?
   latitude     Float?
   longitude    Float?
+
+  /// Reserved for a future Project/development entity (own societies, schemes,
+  /// blocks). Inert in v1 - nothing reads or writes it. When Project ships this
+  /// becomes a real relation without restructuring Property.
+  projectId String?
 
   status             ListingStatus      @default(DRAFT)
   verificationStatus VerificationStatus @default(UNVERIFIED)
