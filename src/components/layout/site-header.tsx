@@ -7,17 +7,18 @@ import { NAV_ITEMS } from '@/lib/navigation';
 import { ButtonLink } from '@/components/ui/button';
 import { Container } from '@/components/ui/layout';
 import { cn } from '@/lib/cn';
+import { BRAND } from '@/lib/brand';
 
 /**
- * PLACEHOLDER WORDMARK. Replaced by the AL-MAKKAH logo when it is supplied;
- * only this component changes.
+ * PLACEHOLDER WORDMARK. The name comes from src/lib/brand.ts; replaced by the
+ * client's logo when one is supplied, and only this component changes.
  */
 function Wordmark() {
   return (
     <Link href="/" className="flex flex-col leading-none">
-      <span className="font-display text-xl tracking-tight">AL-MAKKAH</span>
+      <span className="font-display text-xl tracking-tight">{BRAND.name}</span>
       <span className="text-[0.625rem] uppercase tracking-[0.22em] text-text-muted">
-        Real Estate
+        {BRAND.descriptor}
       </span>
     </Link>
   );

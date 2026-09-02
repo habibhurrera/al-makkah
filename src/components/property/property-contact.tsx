@@ -7,7 +7,7 @@ import type { Purpose } from '@/generated/prisma';
 /**
  * Contact panel on a property page.
  *
- * Every channel routes to AL-MAKKAH itself - there are no agent accounts, so
+ * Every channel routes to the agency itself - there are no agent accounts, so
  * the numbers come from SiteSetting. Any channel with no number configured is
  * hidden rather than rendered as a dead link.
  */
@@ -26,7 +26,7 @@ export function PropertyContact({
 }) {
   const whatsapp = whatsappNumber(settings.whatsapp ?? settings.phone);
 
-  // Pre-filled so AL-MAKKAH knows which listing the message is about.
+  // Pre-filled so the agency knows which listing the message is about.
   const whatsappText = encodeURIComponent(
     `Assalam o Alaikum, I am interested in ${title} (Ref ${refNo}).\n${siteUrl}/property/${refNo ? '' : ''}`.trim(),
   );
@@ -35,7 +35,7 @@ export function PropertyContact({
     <Card>
       <CardBody className="flex flex-col gap-5">
         <div className="flex flex-col gap-1">
-          <h2 className="font-display text-xl">Contact AL-MAKKAH</h2>
+          <h2 className="font-display text-xl">Contact us</h2>
           <p className="text-sm text-text-muted">
             Ask about this property or arrange a viewing.
           </p>
@@ -70,7 +70,7 @@ export function PropertyContact({
         {!settings.phone && !whatsapp && (
           <p className="text-sm text-text-subtle border-l-2 border-border pl-3">
             Contact numbers have not been added yet. Use the form below and
-            AL-MAKKAH will get back to you.
+            We will get back to you.
           </p>
         )}
 

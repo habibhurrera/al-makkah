@@ -5,25 +5,26 @@ import { Badge, VerifiedBadge } from '@/components/ui/badge';
 import { Section } from '@/components/ui/layout';
 import { Card, CardBody } from '@/components/ui/card';
 import { Container as Wrap } from '@/components/ui/layout';
-import { getPropertyBySlug, getPublishedSlugs } from '@/server/queries/properties';
+import { getPropertyBySlug } from '@/server/queries/properties';
 import { formatArea, formatPkr, formatRent } from '@/lib/units';
 import { PROPERTY_TYPE_LABEL } from '@/types/property';
 import { getSiteSettings } from '@/server/queries/settings';
 import { PropertyContact } from '@/components/property/property-contact';
+import { PropertyLocation } from '@/components/property/property-location';
 import { siteUrl } from '@/lib/env';
+import { headers } from 'next/headers';
 
-export const revalidate = 300;
-
-export async function generateStaticParams() {
-  try {
-    const slugs = await getPublishedSlugs();
-    return slugs.map(({ slug }) => ({ slug }));
-  } catch {
-    // No database at build time (e.g. a preview build without env vars).
-    // Pages still render on demand.
-    return [];
-  }
-}
+/**
+ * Rendered per request, not prerendered.
+ *
+ * This page used to be generated at build time and revalidated every five
+ * minutes. Nonce-based CSP rules that out: prerendered HTML carries a nonce
+ * from a request that never happened, so the browser blocks the page's own
+ * hydration scripts. The root layout awaits a connection for the whole tree;
+ * the note is here because this is the page that lost the most by it.
+ *
+ * Slugs are still enumerated for the sitemap - see getPublishedSlugs.
+ */
 
 export async function generateMetadata({
   params,
@@ -76,10 +77,16 @@ export default async function PropertyDetailPage({
   params,
 }: PageProps<'/property/[slug]'>) {
   const { slug } = await params;
-  const [property, settings] = await Promise.all([
+  const [property, settings, requestHeaders] = await Promise.all([
     getPropertyBySlug(slug),
     getSiteSettings(),
+    headers(),
   ]);
+
+  // Set by src/proxy.ts. Browsers do not execute application/ld+json, but the
+  // nonce costs nothing and keeps the block valid under a strict script-src
+  // however a given browser chooses to classify it.
+  const nonce = requestHeaders.get('x-nonce') ?? undefined;
 
   // An unpublished listing is indistinguishable from one that never existed.
   if (!property) notFound();
@@ -96,7 +103,7 @@ export default async function PropertyDetailPage({
         ['Location confirmed', property.verification.locationChecked],
         ['Photos and video checked', property.verification.mediaChecked],
         ['Price confirmed with owner', property.verification.priceConfirmed],
-        ['Site visited by AL-MAKKAH', property.verification.siteVisited],
+        ['Site visited by our team', property.verification.siteVisited],
       ].filter(([, done]) => done)
     : [];
 
@@ -105,6 +112,7 @@ export default async function PropertyDetailPage({
       {/* Structured data so search engines read this as a real listing. */}
       <script
         type="application/ld+json"
+        nonce={nonce}
         dangerouslySetInnerHTML={{
           __html: JSON.stringify({
             '@context': 'https://schema.org',
@@ -174,7 +182,7 @@ export default async function PropertyDetailPage({
                   className="relative aspect-[4/3] rounded-lg overflow-hidden bg-surface-sunken"
                 >
                   <Image
-                    src={image.url}
+                    src={image.thumbnailUrl ?? image.url}
                     alt={image.altText ?? property.title}
                     fill
                     sizes="25vw"
@@ -197,7 +205,7 @@ export default async function PropertyDetailPage({
                   className="relative aspect-square rounded-md overflow-hidden bg-surface-sunken"
                 >
                   <Image
-                    src={image.url}
+                    src={image.thumbnailUrl ?? image.url}
                     alt={image.altText ?? property.title}
                     fill
                     sizes="16vw"
@@ -255,6 +263,16 @@ export default async function PropertyDetailPage({
                   {property.description}
                 </div>
               </section>
+
+              {/* ------------------------------------------------ location */}
+              {property.latitude !== null && property.longitude !== null && (
+                <PropertyLocation
+                  latitude={property.latitude}
+                  longitude={property.longitude}
+                  areaName={property.areaRelation.name}
+                  addressLine={property.addressLine}
+                />
+              )}
 
               {/* ----------------------------------------------- amenities */}
               {property.amenities.length > 0 && (
@@ -314,7 +332,7 @@ export default async function PropertyDetailPage({
               {property.isVerified && checks.length > 0 && (
                 <section className="flex flex-col gap-3">
                   <h2 className="font-display text-2xl">
-                    What AL-MAKKAH verified
+                    What we verified
                   </h2>
                   <Card>
                     <CardBody className="flex flex-col gap-2">

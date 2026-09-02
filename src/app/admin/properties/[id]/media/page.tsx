@@ -39,6 +39,7 @@ export default async function PropertyMediaPage({
         gallery={property.media.map((item) => ({
           id: item.id,
           url: item.url,
+          thumbnailUrl: item.thumbnailUrl,
           kind: item.kind,
           isVideo: item.isVideo,
           sortOrder: item.sortOrder,

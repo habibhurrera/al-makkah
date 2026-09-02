@@ -26,8 +26,11 @@ export function PropertyCard({ property }: { property: PropertyCardData }) {
       <Link href={`/property/${property.slug}`} className="flex flex-col h-full">
         <div className="relative aspect-[4/3] bg-surface-sunken">
           {property.imageUrl ? (
+            /* Prefer the derived thumbnail: a card never needs the 4 MB
+               original, and pointing the optimiser at the small file keeps
+               the first uncached render of a results page cheap. */
             <Image
-              src={property.imageUrl}
+              src={property.thumbnailUrl ?? property.imageUrl}
               alt={property.title}
               fill
               sizes="(min-width: 1024px) 33vw, (min-width: 640px) 50vw, 100vw"

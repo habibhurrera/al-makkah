@@ -3,14 +3,13 @@ import { ButtonLink } from '@/components/ui/button';
 import { Card, CardBody } from '@/components/ui/card';
 import { Container, Section, SectionHeading } from '@/components/ui/layout';
 import { PropertyCard } from '@/components/property/property-card';
-import { Hero } from '@/components/three/hero';
+import { Hero } from '@/components/hero/hero';
 import { HYDERABAD_AREA_GROUPS } from '@/lib/hyderabad-areas';
 import {
   BUYER_STEPS,
-  PLACEHOLDER_ABOUT,
   SELLER_STEPS,
   TESTIMONIALS,
-  WHY_AL_MAKKAH,
+  WHY_US,
 } from '@/lib/placeholder-content';
 import { getFeaturedProperties } from '@/server/queries/properties';
 import { EmptyState } from '@/components/ui/states';
@@ -33,7 +32,7 @@ const CATEGORIES = [
   {
     label: 'Sell',
     href: '/sell',
-    description: 'List your property with AL-MAKKAH and reach real buyers.',
+    description: 'List your property with us and reach real buyers.',
     detail: 'Houses · Plots',
   },
   {
@@ -95,36 +94,6 @@ export default async function HomePage() {
     <main>
       <Hero />
 
-      {/* ---------------------------------------------------------------- about */}
-      <Section>
-        <Container className="grid gap-10 lg:grid-cols-2 lg:gap-16">
-          <div className="flex flex-col gap-5">
-            <SectionHeading
-              eyebrow={PLACEHOLDER_ABOUT.eyebrow}
-              title={PLACEHOLDER_ABOUT.title}
-            />
-            {PLACEHOLDER_ABOUT.body.map((paragraph) => (
-              <p key={paragraph} className="text-text-muted max-w-[var(--measure)]">
-                {paragraph}
-              </p>
-            ))}
-            <PlaceholderNote>
-              Placeholder copy — replaced by AL-MAKKAH’s own company description.
-            </PlaceholderNote>
-          </div>
-          <div className="grid gap-5 sm:grid-cols-3 lg:grid-cols-1 lg:content-start">
-            {PLACEHOLDER_ABOUT.pillars.map((pillar) => (
-              <Card key={pillar.title}>
-                <CardBody className="flex flex-col gap-2">
-                  <h3 className="font-display text-xl">{pillar.title}</h3>
-                  <p className="text-sm text-text-muted">{pillar.body}</p>
-                </CardBody>
-              </Card>
-            ))}
-          </div>
-        </Container>
-      </Section>
-
       {/* ----------------------------------------------------------- categories */}
       <Section tone="sunken">
         <Container className="flex flex-col gap-10">
@@ -160,7 +129,7 @@ export default async function HomePage() {
           <div className="flex flex-wrap items-end justify-between gap-5">
             <SectionHeading
               eyebrow="Featured"
-              title="Properties from AL-MAKKAH"
+              title="Featured properties"
               description="Verified listings, hand-picked."
             />
             <ButtonLink href="/buy" variant="secondary">
@@ -176,7 +145,7 @@ export default async function HomePage() {
           ) : (
             <EmptyState
               title="No properties published yet"
-              description="AL-MAKKAH's first listings will appear here. If you have a property to sell or rent out, you can submit it now."
+              description="The first listings will appear here. If you have a property to sell or rent out, you can submit it now."
               action={
                 <ButtonLink href="/sell" variant="secondary">
                   Submit your property
@@ -187,15 +156,15 @@ export default async function HomePage() {
         </Container>
       </Section>
 
-      {/* ------------------------------------------------------ why al-makkah */}
+      {/* ------------------------------------------------------------- why us */}
       <Section tone="sunken">
         <Container className="flex flex-col gap-10">
           <SectionHeading
-            eyebrow="Why AL-MAKKAH"
+            eyebrow="Why us"
             title="What you get from working with us"
           />
           <div className="grid gap-x-10 gap-y-8 sm:grid-cols-2 lg:grid-cols-3">
-            {WHY_AL_MAKKAH.map((reason) => (
+            {WHY_US.map((reason) => (
               <div key={reason.title} className="flex flex-col gap-2">
                 <h3 className="font-display text-xl">{reason.title}</h3>
                 <p className="text-text-muted text-sm">{reason.body}</p>
@@ -232,7 +201,7 @@ export default async function HomePage() {
           <SectionHeading
             eyebrow="Coverage"
             title="Across the whole of Hyderabad"
-            description="AL-MAKKAH works throughout the city and the surrounding areas."
+            description="We work throughout the city and the surrounding areas."
           />
           <div className="grid gap-8 sm:grid-cols-2 lg:grid-cols-4">
             {HYDERABAD_AREA_GROUPS.map((group) => (
@@ -286,7 +255,7 @@ export default async function HomePage() {
             Looking for your next property?
           </h2>
           <p className="text-ink-300 max-w-[52ch]">
-            Tell us what you need and AL-MAKKAH will find it, or list the
+            Tell us what you need and we will find it, or list the
             property you already have.
           </p>
           <div className="flex flex-wrap gap-3">
@@ -298,7 +267,7 @@ export default async function HomePage() {
               size="lg"
               className="border border-ink-700 text-text-inverse hover:bg-ink-800 bg-transparent"
             >
-              Talk to AL-MAKKAH
+              Talk to us
             </ButtonLink>
           </div>
         </Container>

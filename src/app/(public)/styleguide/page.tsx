@@ -73,7 +73,7 @@ export default function StyleguidePage() {
         <Container>
           <SectionHeading
             eyebrow="Internal"
-            title="AL-MAKKAH design system"
+            title="Design system"
             description="Every colour and typeface below is a placeholder until the real branding is supplied. Components read semantic tokens, so a rebrand changes one file."
           />
         </Container>
@@ -130,7 +130,7 @@ export default function StyleguidePage() {
         <Row title="Buttons">
           <div className="flex flex-wrap items-center gap-3">
             <Button variant="primary">Find a Property</Button>
-            <Button variant="secondary">Talk to AL-MAKKAH</Button>
+            <Button variant="secondary">Talk to us</Button>
             <Button variant="ghost">Clear filters</Button>
             <Button variant="primary" disabled>
               Disabled

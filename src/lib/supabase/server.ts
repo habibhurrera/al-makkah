@@ -32,7 +32,7 @@ export async function createSupabaseServerClient() {
             }
           } catch {
             // Called from a Server Component, where cookies are read-only.
-            // Session refresh is handled by middleware instead.
+            // Session refresh is handled by src/proxy.ts instead.
           }
         },
       },

@@ -1,9 +1,10 @@
 import Link from 'next/link';
 import { NAV_ITEMS } from '@/lib/navigation';
 import { Container } from '@/components/ui/layout';
+import { BRAND } from '@/lib/brand';
 
 /**
- * Contact details are PLACEHOLDERS until AL-MAKKAH supplies them. They will
+ * Contact details are PLACEHOLDERS until the client supplies them. They will
  * come from the SiteSetting table (single row, admin-editable) rather than
  * being hardcoded here - see prisma/schema.prisma.
  */
@@ -20,7 +21,7 @@ export function SiteFooter() {
       <Container>
         <div className="py-14 grid gap-10 md:grid-cols-4">
           <div className="flex flex-col gap-3">
-            <span className="font-display text-2xl">AL-MAKKAH</span>
+            <span className="font-display text-2xl">{BRAND.name}</span>
             <span className="text-xs uppercase tracking-[0.22em] text-ink-400">
               Real Estate
             </span>
@@ -63,7 +64,8 @@ export function SiteFooter() {
 
         <div className="py-6 border-t border-ink-800 flex flex-col sm:flex-row gap-2 sm:items-center sm:justify-between">
           <p className="text-xs text-ink-400">
-            © {new Date().getFullYear()} AL-MAKKAH Real Estate. All rights reserved.
+            © {new Date().getFullYear()} {BRAND.name} {BRAND.descriptor}. All rights
+            reserved.
           </p>
           <p className="text-xs text-ink-500">Hyderabad, Sindh, Pakistan</p>
         </div>

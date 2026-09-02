@@ -6,6 +6,7 @@ import { prisma } from '@/lib/db';
 import { requireAdmin, writeAuditLog } from '@/server/auth';
 import { createSupabaseAdminClient } from '@/lib/supabase/server';
 import { BUCKET } from '@/lib/storage';
+import { removeMediaFile, storeMediaFile } from '@/server/services/media-upload';
 import type { ActionResult } from '@/server/actions/admin';
 
 /**
@@ -105,14 +106,15 @@ export async function importSubmissionMedia(
       continue;
     }
 
-    const target = `${property.id}/${crypto.randomUUID()}.${extensionOf(path)}`;
-    const mimeType = mimeFor(path);
+    const stored = await storeMediaFile({
+      propertyId: property.id,
+      fileName: path,
+      mimeType: mimeFor(path),
+      kind: kindFor(path),
+      bytes: await file.arrayBuffer(),
+    });
 
-    const { error: uploadError } = await supabase.storage
-      .from(BUCKET.media)
-      .upload(target, file, { contentType: mimeType, upsert: false });
-
-    if (uploadError) {
+    if (!stored) {
       failures.push(path);
       continue;
     }
@@ -120,10 +122,13 @@ export async function importSubmissionMedia(
     await prisma.propertyMedia.create({
       data: {
         propertyId: property.id,
-        kind: kindFor(path),
-        storagePath: target,
-        mimeType,
-        byteSize: file.size,
+        kind: stored.kind,
+        storagePath: stored.storagePath,
+        thumbnailPath: stored.thumbnailPath,
+        width: stored.width,
+        height: stored.height,
+        mimeType: stored.mimeType,
+        byteSize: stored.byteSize,
         sortOrder: existingCount + index,
         uploadStatus: 'READY',
       },
@@ -167,12 +172,18 @@ export async function deletePropertyMedia(
 
   const media = await prisma.propertyMedia.findUnique({
     where: { id: parsed.data.mediaId },
-    select: { id: true, storagePath: true, property: { select: { id: true, slug: true } } },
+    select: {
+      id: true,
+      storagePath: true,
+      thumbnailPath: true,
+      property: { select: { id: true, slug: true } },
+    },
   });
   if (!media) return { ok: false, message: 'File not found.' };
 
-  const supabase = createSupabaseAdminClient();
-  await supabase.storage.from(BUCKET.media).remove([media.storagePath]);
+  // The derived thumbnail goes with the original. Leaving it behind would
+  // orphan a publicly reachable copy of a photo the admin just removed.
+  await removeMediaFile(media);
   await prisma.propertyMedia.delete({ where: { id: media.id } });
 
   await writeAuditLog({

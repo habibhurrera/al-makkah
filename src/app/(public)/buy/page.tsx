@@ -13,7 +13,7 @@ import { getAreasWithCounts, searchProperties } from '@/server/queries/propertie
 export const metadata: Metadata = {
   title: 'Buy Property in Hyderabad',
   description:
-    'Houses and plots for sale across Hyderabad, Sindh. Verified listings from AL-MAKKAH Real Estate.',
+    'Houses and plots for sale across Hyderabad, Sindh. Every listing verified before it is published.',
 };
 
 const SALE_TYPES = ['HOUSE', 'PLOT', 'BUNGALOW', 'FLAT', 'COMMERCIAL'] as const;
@@ -85,7 +85,7 @@ export default async function BuyPage({
         <SectionHeading
           eyebrow="Buy"
           title="Buy Property in Hyderabad"
-          description="Houses and plots for sale across the city. Every published listing has been reviewed by AL-MAKKAH."
+          description="Houses and plots for sale across the city. Every published listing has been reviewed by our team."
         />
         <Suspense fallback={<ResultsSkeleton />}>
           <Results searchParams={resolved} />

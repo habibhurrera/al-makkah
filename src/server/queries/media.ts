@@ -78,6 +78,7 @@ export async function getPropertyForMedia(propertyId: string) {
           id: true,
           kind: true,
           storagePath: true,
+          thumbnailPath: true,
           sortOrder: true,
           mimeType: true,
           uploadStatus: true,
@@ -94,6 +95,7 @@ export async function getPropertyForMedia(propertyId: string) {
     media: property.media.map((item) => ({
       ...item,
       url: publicMediaUrl(item.storagePath),
+      thumbnailUrl: item.thumbnailPath ? publicMediaUrl(item.thumbnailPath) : null,
       isVideo: ACCEPTED_VIDEO_TYPES.includes(item.mimeType ?? ''),
     })),
   };

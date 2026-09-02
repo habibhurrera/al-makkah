@@ -12,6 +12,7 @@ import {
   MAX_VIDEO_BYTES,
   submissionObjectPath,
 } from '@/lib/storage';
+import { notifyNewLead } from '@/server/services/notify';
 
 /**
  * Public property submission.
@@ -32,13 +33,13 @@ function isAcceptedType(type: string) {
 
 export async function POST(request: NextRequest) {
   const ip = clientIp(request.headers);
-  const limit = rateLimit(`submission:${ip}`, RATE_LIMITS.sellerSubmission);
+  const limit = await rateLimit(`submission:${ip}`, RATE_LIMITS.sellerSubmission);
 
   if (!limit.allowed) {
     return NextResponse.json(
       {
         message:
-          'You have submitted several properties recently. Please try again later or call AL-MAKKAH directly.',
+          'You have submitted several properties recently. Please try again later or call us directly.',
       },
       { status: 429, headers: { 'Retry-After': String(limit.retryAfterSeconds) } },
     );
@@ -165,10 +166,22 @@ export async function POST(request: NextRequest) {
       }
     }
 
+    const reference = submission.id.slice(-8).toUpperCase();
+
+    // Stored first, notified second. A mail failure never costs a submission.
+    await notifyNewLead({
+      kind: 'SELL',
+      name: data.sellerName,
+      phone: data.sellerPhone,
+      email: data.sellerEmail,
+      message: data.description,
+      propertyRef: reference,
+    });
+
     return NextResponse.json(
       {
         ok: true,
-        reference: submission.id.slice(-8).toUpperCase(),
+        reference,
         filesReceived: uploadedPaths.length,
         filesAttempted: files.length,
       },

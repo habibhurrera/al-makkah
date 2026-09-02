@@ -1,21 +1,20 @@
 import { NextResponse, type NextRequest } from 'next/server';
 import { prisma } from '@/lib/db';
 import { requireAdmin, NotAuthorizedError, writeAuditLog } from '@/server/auth';
-import { createSupabaseAdminClient } from '@/lib/supabase/server';
 import {
   ACCEPTED_IMAGE_TYPES,
   ACCEPTED_VIDEO_TYPES,
-  BUCKET,
   MAX_IMAGE_BYTES,
   MAX_VIDEO_BYTES,
 } from '@/lib/storage';
+import { storeMediaFile } from '@/server/services/media-upload';
 
 /**
- * Admin upload of AL-MAKKAH's own photos and video onto a listing.
+ * Admin upload of the agency's own photos and video onto a listing.
  *
  * Files here go straight into the PUBLIC media bucket, which is exactly why
  * this route is admin-only and re-checks authorization itself rather than
- * relying on middleware.
+ * relying on the proxy.
  */
 export const maxDuration = 60;
 
@@ -72,30 +71,30 @@ export async function POST(request: NextRequest) {
     }
   }
 
-  const supabase = createSupabaseAdminClient();
   const existing = await prisma.propertyMedia.count({ where: { propertyId } });
 
   let uploaded = 0;
   for (const [index, file] of files.entries()) {
-    const extension = (file.name.split('.').pop() ?? 'bin')
-      .toLowerCase()
-      .replace(/[^a-z0-9]/g, '')
-      .slice(0, 5);
-    const target = `${propertyId}/${crypto.randomUUID()}.${extension || 'bin'}`;
+    const stored = await storeMediaFile({
+      propertyId,
+      fileName: file.name,
+      mimeType: file.type,
+      kind: ACCEPTED_VIDEO_TYPES.includes(file.type) ? 'VIDEO' : 'IMAGE',
+      bytes: await file.arrayBuffer(),
+    });
 
-    const { error } = await supabase.storage
-      .from(BUCKET.media)
-      .upload(target, file, { contentType: file.type, upsert: false });
-
-    if (error) continue;
+    if (!stored) continue;
 
     await prisma.propertyMedia.create({
       data: {
         propertyId,
-        kind: ACCEPTED_VIDEO_TYPES.includes(file.type) ? 'VIDEO' : 'IMAGE',
-        storagePath: target,
-        mimeType: file.type,
-        byteSize: file.size,
+        kind: stored.kind,
+        storagePath: stored.storagePath,
+        thumbnailPath: stored.thumbnailPath,
+        width: stored.width,
+        height: stored.height,
+        mimeType: stored.mimeType,
+        byteSize: stored.byteSize,
         sortOrder: existing + index,
         uploadStatus: 'READY',
       },

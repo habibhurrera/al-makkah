@@ -13,7 +13,7 @@ import { getAreasWithCounts, searchProperties } from '@/server/queries/propertie
 export const metadata: Metadata = {
   title: 'Property for Rent in Hyderabad',
   description:
-    'Houses, bungalows, flats and portions to rent across Hyderabad, Sindh. Verified listings from AL-MAKKAH Real Estate.',
+    'Houses, bungalows, flats and portions to rent across Hyderabad, Sindh. Every listing verified before it is published.',
 };
 
 const RENT_TYPES = [
@@ -92,7 +92,7 @@ export default async function RentPage({
         <SectionHeading
           eyebrow="Rent"
           title="Property for Rent in Hyderabad"
-          description="Houses, bungalows, flats and portions available to rent across the city. Every published listing has been reviewed by AL-MAKKAH."
+          description="Houses, bungalows, flats and portions available to rent across the city. Every published listing has been reviewed by our team."
         />
         <Suspense fallback={<ResultsSkeleton />}>
           <Results searchParams={resolved} />

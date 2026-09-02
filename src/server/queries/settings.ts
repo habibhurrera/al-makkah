@@ -2,7 +2,7 @@ import 'server-only';
 import { prisma } from '@/lib/db';
 
 /**
- * AL-MAKKAH's own contact details, from the single-row SiteSetting table.
+ * The agency's own contact details, from the single-row SiteSetting table.
  *
  * There are no agent accounts, so every property is contacted through the
  * company. Nothing here is hardcoded in a component - an admin edits it once

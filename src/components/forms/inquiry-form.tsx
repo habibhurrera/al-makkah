@@ -55,7 +55,7 @@ export function InquiryForm({
       <div role="status" className="flex flex-col gap-2">
         <p className="font-medium">Enquiry sent</p>
         <p className="text-sm text-text-muted">
-          AL-MAKKAH has received your message and will contact you shortly.
+          We have received your message and will contact you shortly.
         </p>
         <Button variant="ghost" onClick={() => setState('idle')} className="self-start px-0">
           Send another

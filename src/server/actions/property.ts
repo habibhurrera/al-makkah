@@ -15,7 +15,7 @@ import type { ActionResult } from '@/server/actions/admin';
  * Three things this does NOT touch, by design:
  *   - status and verificationStatus, which have their own actions and audit
  *     entries, so an edit cannot quietly publish or verify a property;
- *   - refNo, the reference AL-MAKKAH gives out over the phone;
+ *   - refNo, the reference given out over the phone;
  *   - slug, because changing it would break every link and search result
  *     already pointing at the listing.
  */
@@ -154,7 +154,7 @@ export async function updateProperty(
 }
 
 /**
- * Creates a listing directly, for a property AL-MAKKAH takes on in the office
+ * Creates a listing directly, for a property the agency takes on in the office
  * with no public submission behind it.
  *
  * The listing is created as an unpublished, unverified DRAFT - identical to

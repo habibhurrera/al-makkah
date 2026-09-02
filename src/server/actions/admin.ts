@@ -7,6 +7,7 @@ import { prisma } from '@/lib/db';
 import { requireAdmin, writeAuditLog } from '@/server/auth';
 import { toSqFt } from '@/lib/units';
 import type { AreaUnit } from '@/generated/prisma';
+import { BRAND } from '@/lib/brand';
 
 /**
  * Admin mutations.
@@ -321,7 +322,7 @@ const verifySchema = z.object({
  *
  * The badge is not a free choice: a property is only marked VERIFIED when
  * ownership, location and price have all been checked. Anything less is stored
- * as IN_PROGRESS, so "AL-MAKKAH VERIFIED" always means the same thing.
+ * as IN_PROGRESS, so the verified badge always means the same thing.
  */
 export async function saveVerification(
   _previous: ActionResult | null,
@@ -400,7 +401,7 @@ export async function saveVerification(
   return {
     ok: true,
     message: meetsBar
-      ? 'Property marked as AL-MAKKAH Verified.'
+      ? `Property marked as ${BRAND.name} Verified.`
       : 'Saved. Ownership, location and price must all be checked before the verified badge is shown.',
   };
 }

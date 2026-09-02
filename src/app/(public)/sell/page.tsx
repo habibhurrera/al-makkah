@@ -6,7 +6,7 @@ import { prisma } from '@/lib/db';
 export const metadata: Metadata = {
   title: 'Sell Your Property',
   description:
-    'List your house, plot, flat or bungalow with AL-MAKKAH Real Estate in Hyderabad. Every property is verified before it is published.',
+    'List your house, plot, flat or bungalow in Hyderabad. Every property is verified before it is published.',
 };
 
 export const revalidate = 3600;
@@ -27,7 +27,7 @@ async function getAreas() {
 
 const STEPS = [
   'You submit the property with photos and your contact number',
-  'AL-MAKKAH reviews what you sent',
+  'We review what you sent',
   'Ownership, location and price are verified',
   'Your listing is published on the site',
   'Buyer enquiries are passed on to you',
@@ -43,7 +43,7 @@ export default async function SellPage() {
           <SectionHeading
             eyebrow="Sell"
             title="Sell or rent out your property"
-            description="Add your property yourself. AL-MAKKAH verifies it, publishes it, and passes on serious buyers."
+            description="Add your property yourself. We verify it, publish it, and pass on serious buyers."
           />
           <ol className="flex flex-col gap-3 lg:pt-4">
             {STEPS.map((step, index) => (

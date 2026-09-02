@@ -1,7 +1,7 @@
 import { AreaUnit } from '@/generated/prisma';
 
 /**
- * Area handling for AL-MAKKAH.
+ * Area handling.
  *
  * Listings in Hyderabad are quoted in whatever unit the owner uses, so the
  * uploader picks the unit and we store their number and their unit verbatim -
@@ -9,7 +9,7 @@ import { AreaUnit } from '@/generated/prisma';
  * value used ONLY for filtering and sorting, so a 2-kanal plot and a 400 sq ft
  * flat can be compared against each other.
  *
- * AL-MAKKAH quotes in square yards, which is the Hyderabad norm. The other
+ * Listings are quoted in square yards, which is the Hyderabad norm. The other
  * units stay available for the occasional listing that arrives measured
  * differently. Marla/Kanal use the modern convention (225 / 4500 sq ft) rather
  * than the old colonial 272.25 / 5445 - nothing in Sindh depends on it.
@@ -26,7 +26,7 @@ export const SQ_FT_PER_UNIT: Record<AreaUnit, number> = {
 /** Pre-selected in the upload form. */
 export const DEFAULT_AREA_UNIT: AreaUnit = 'SQ_YD';
 
-/** Dropdown order - the unit AL-MAKKAH actually uses comes first. */
+/** Dropdown order - the unit most commonly used comes first. */
 export const AREA_UNIT_ORDER: AreaUnit[] = [
   'SQ_YD',
   'SQ_FT',

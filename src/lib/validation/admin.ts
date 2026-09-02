@@ -88,7 +88,7 @@ export const propertyEditSchema = z.object({
 });
 
 /**
- * Creating a listing directly - for a property AL-MAKKAH takes on in the
+ * Creating a listing directly - for a property the agency takes on in the
  * office, with no public submission behind it. Same fields, no id yet.
  *
  * Note what is still absent: status and verificationStatus. A listing created

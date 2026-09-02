@@ -2,6 +2,7 @@ import { NextResponse, type NextRequest } from 'next/server';
 import { prisma } from '@/lib/db';
 import { contactInquirySchema } from '@/lib/validation/public';
 import { clientIp, rateLimit, RATE_LIMITS } from '@/lib/rate-limit';
+import { notifyNewLead } from '@/server/services/notify';
 
 /**
  * Public enquiry endpoint.
@@ -12,7 +13,7 @@ import { clientIp, rateLimit, RATE_LIMITS } from '@/lib/rate-limit';
  */
 export async function POST(request: NextRequest) {
   const ip = clientIp(request.headers);
-  const limit = rateLimit(`inquiry:${ip}`, RATE_LIMITS.inquiry);
+  const limit = await rateLimit(`inquiry:${ip}`, RATE_LIMITS.inquiry);
 
   if (!limit.allowed) {
     return NextResponse.json(
@@ -55,12 +56,14 @@ export async function POST(request: NextRequest) {
     // A referenced property must exist and be published, otherwise the link is
     // dropped rather than storing a dangling or probing reference.
     let linkedPropertyId: string | undefined;
+    let linkedPropertyRef: string | null = null;
     if (propertyId) {
       const property = await prisma.property.findFirst({
         where: { id: propertyId, status: 'PUBLISHED' },
-        select: { id: true },
+        select: { id: true, refNo: true },
       });
       linkedPropertyId = property?.id;
+      linkedPropertyRef = property?.refNo ?? null;
     }
 
     await prisma.inquiry.create({
@@ -73,6 +76,18 @@ export async function POST(request: NextRequest) {
         propertyId: linkedPropertyId,
         sourcePath: request.headers.get('referer')?.slice(0, 500),
       },
+    });
+
+    // The lead is stored. Notification is a convenience on top and cannot
+    // fail the request - notifyNewLead swallows its own errors and returns
+    // 'skipped' when no provider is configured.
+    await notifyNewLead({
+      kind: data.kind,
+      name: data.name,
+      phone: data.phone,
+      email: data.email,
+      message: data.message,
+      propertyRef: linkedPropertyRef,
     });
 
     return NextResponse.json({ ok: true }, { status: 201 });

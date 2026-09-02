@@ -47,11 +47,50 @@ export function submissionObjectPath(
   submissionRef: string,
   originalName: string,
 ): string {
-  const extension = (originalName.split('.').pop() ?? '')
+  return `${submissionRef}/${crypto.randomUUID()}.${safeExtension(originalName)}`;
+}
+/**
+ * Where a listing's public files live: one folder per property.
+ *
+ * As with submissions, the uploader's filename is never used as a path - only
+ * a sanitised extension survives, so a name like "../../secret.jpg" cannot
+ * write outside the listing's own folder.
+ */
+export function mediaObjectPath(propertyId: string, originalName: string): string {
+  return `${propertyId}/${crypto.randomUUID()}.${safeExtension(originalName)}`;
+}
+
+/**
+ * The derived thumbnail for a public media file.
+ *
+ * Kept in a `thumbs/` sub-folder of the same listing so a listing's whole
+ * gallery - originals and derivatives - is one prefix to list or delete.
+ */
+export function thumbnailObjectPath(propertyId: string): string {
+  return `${propertyId}/thumbs/${crypto.randomUUID()}.webp`;
+}
+
+/**
+ * Reduces a filename to a safe, short, lowercase extension.
+ *
+ * Splitting on "." and taking the last part is wrong when there is no dot at
+ * all: "no-extension" would yield "noext", inventing an extension out of the
+ * filename itself. A name with no dot has no extension, and a dotfile like
+ * ".gitignore" has no extension either - both fall back to "bin".
+ */
+export function safeExtension(originalName: string): string {
+  const lastDot = originalName.lastIndexOf('.');
+
+  // -1 means no dot; 0 means a leading-dot name, where the "extension" is
+  // actually the whole filename.
+  if (lastDot <= 0) return 'bin';
+
+  const extension = originalName
+    .slice(lastDot + 1)
     .toLowerCase()
     .replace(/[^a-z0-9]/g, '')
     .slice(0, 5);
-  const safeExtension = extension || 'bin';
-  const unique = crypto.randomUUID();
-  return `${submissionRef}/${unique}.${safeExtension}`;
+
+  return extension || 'bin';
 }
+

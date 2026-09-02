@@ -35,7 +35,7 @@ const CARD_SELECT = {
     where: { kind: 'IMAGE' as const, uploadStatus: 'READY' as const },
     orderBy: { sortOrder: 'asc' as const },
     take: 1,
-    select: { storagePath: true },
+    select: { storagePath: true, thumbnailPath: true },
   },
   _count: {
     select: { media: { where: { kind: 'VIDEO' as const, uploadStatus: 'READY' as const } } },
@@ -69,6 +69,9 @@ function toCardData(row: CardRow): PropertyCardData {
     isFeatured: row.isFeatured,
     hasVideo: row._count.media > 0,
     imageUrl: row.media[0] ? publicMediaUrl(row.media[0].storagePath) : null,
+    thumbnailUrl: row.media[0]?.thumbnailPath
+      ? publicMediaUrl(row.media[0].thumbnailPath)
+      : null,
   };
 }
 
@@ -220,7 +223,15 @@ export async function getPropertyBySlug(slug: string) {
       media: {
         where: { uploadStatus: 'READY' },
         orderBy: [{ kind: 'asc' }, { sortOrder: 'asc' }],
-        select: { id: true, kind: true, storagePath: true, altText: true },
+        select: {
+          id: true,
+          kind: true,
+          storagePath: true,
+          thumbnailPath: true,
+          width: true,
+          height: true,
+          altText: true,
+        },
       },
       // Only the outcome and date - never adminNotes or internal remarks.
       verification: {
@@ -249,11 +260,14 @@ export async function getPropertyBySlug(slug: string) {
     media: property.media.map((item) => ({
       ...item,
       url: publicMediaUrl(item.storagePath),
+      // Small tiles in the gallery use the derived file; the hero and the
+      // lightbox-sized images use the original.
+      thumbnailUrl: item.thumbnailPath ? publicMediaUrl(item.thumbnailPath) : null,
     })),
   };
 }
 
-/** Slugs for the sitemap and static generation. */
+/** Slugs for the sitemap. */
 export async function getPublishedSlugs() {
   return prisma.property.findMany({
     where: { status: 'PUBLISHED' },

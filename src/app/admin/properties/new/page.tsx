@@ -5,7 +5,7 @@ import { getAmenityOptions, getAreaOptions } from '@/server/queries/admin';
 export const metadata = { title: 'Add a property' };
 
 /**
- * For a property AL-MAKKAH takes on directly - an owner walks into the office
+ * For a property the agency takes on directly - an owner walks into the office
  * with no submission through the website.
  */
 export default async function NewPropertyPage() {
@@ -25,7 +25,7 @@ export default async function NewPropertyPage() {
         </Link>
         <h1 className="font-display text-3xl">Add a property</h1>
         <p className="text-text-muted max-w-[70ch]">
-          For a property brought to AL-MAKKAH directly. Enter the details, then
+          For a property brought to you directly. Enter the details, then
           add photos and video on the next screen.
         </p>
       </div>

@@ -29,7 +29,7 @@ export async function signIn(
 
   // Slow down credential stuffing. Deliberately tight - a real admin signs in
   // a handful of times a day.
-  const limit = rateLimit(`login:${ip}`, { limit: 8, windowMs: 15 * 60 * 1000 });
+  const limit = await rateLimit(`login:${ip}`, { limit: 8, windowMs: 15 * 60 * 1000 });
   if (!limit.allowed) {
     return {
       error: `Too many sign-in attempts. Try again in ${Math.ceil(

@@ -1,10 +1,12 @@
 import type { Metadata } from "next";
+import { connection } from "next/server";
 import { Geist, Geist_Mono, Playfair_Display } from "next/font/google";
 import "./globals.css";
+import { BRAND } from "@/lib/brand";
 
 /**
- * PLACEHOLDER TYPEFACES. Not an AL-MAKKAH brand decision — these are stand-ins
- * until the real brand fonts are supplied. Swapping them means changing this
+ * PLACEHOLDER TYPEFACES. Not a brand decision — these are stand-ins until the
+ * client’s real brand fonts are supplied. Swapping them means changing this
  * file only: every component reads --font-sans / --font-display from tokens.
  */
 const appSans = Geist({
@@ -25,17 +27,32 @@ const appMono = Geist_Mono({
   display: "swap",
 });
 
-// PLACEHOLDER COPY — replaced once AL-MAKKAH supplies real company content.
+// Identity comes from src/lib/brand.ts — one file per client.
 export const metadata: Metadata = {
   title: {
-    default: "AL-MAKKAH Real Estate",
-    template: "%s | AL-MAKKAH Real Estate",
+    default: `${BRAND.name} ${BRAND.descriptor}`,
+    template: `%s | ${BRAND.name} ${BRAND.descriptor}`,
   },
-  description:
-    "Buy, sell and rent verified property in Hyderabad, Pakistan.",
+  description: BRAND.tagline,
 };
 
-export default function RootLayout({ children }: LayoutProps<"/">) {
+export default async function RootLayout({ children }: LayoutProps<"/">) {
+  /**
+   * Opts the whole tree into dynamic rendering.
+   *
+   * The CSP nonce is minted per request in src/proxy.ts, and Next stamps it
+   * onto its scripts while rendering. A page prerendered at build time would carry a
+   * nonce from a request that never happened, so the browser would refuse to
+   * run its own hydration scripts. Awaiting a connection here is the documented
+   * way to say "wait for a real request" once, for every route, rather than
+   * remembering it on each new page.
+   *
+   * The cost is that pages render per request instead of being served from the
+   * full route cache. Data reads are still indexed, bounded queries, and search
+   * engines see the same fully server-rendered HTML as before.
+   */
+  await connection();
+
   return (
     <html
       lang="en"

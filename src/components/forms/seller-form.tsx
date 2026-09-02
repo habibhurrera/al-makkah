@@ -124,7 +124,7 @@ export function SellerForm({ areas }: { areas: AreaOption[] }) {
       setReference(body.reference);
       if (body.filesAttempted > body.filesReceived) {
         setMessage(
-          `${body.filesReceived} of ${body.filesAttempted} files uploaded. AL-MAKKAH will ask for the rest if needed.`,
+          `${body.filesReceived} of ${body.filesAttempted} files uploaded. We will ask for the rest if needed.`,
         );
       }
       setState('sent');
@@ -141,21 +141,21 @@ export function SellerForm({ areas }: { areas: AreaOption[] }) {
         <CardBody className="flex flex-col gap-4">
           <h2 className="font-display text-2xl">Property submitted</h2>
           <p className="text-text-muted">
-            Thank you. AL-MAKKAH has received your property and will review it.
+            Thank you. We have received your property and will review it.
             Your reference is <strong>{reference}</strong> — keep it for any
             follow-up.
           </p>
           <div className="flex flex-col gap-2 text-sm text-text-muted border-l-2 border-border pl-4">
             <p>What happens next:</p>
             <ol className="flex flex-col gap-1 list-decimal pl-4">
-              <li>AL-MAKKAH reviews the details you sent</li>
+              <li>We review the details you sent</li>
               <li>Ownership, location and price are verified</li>
               <li>Once approved, your property is published on the site</li>
               <li>Buyer enquiries are passed on to you</li>
             </ol>
             <p className="pt-2">
               Your property is <strong>not public yet</strong>. Nothing appears
-              on the website until AL-MAKKAH has verified it.
+              on the website until we have verified it.
             </p>
           </div>
           {message && <p className="text-sm text-warning-500">{message}</p>}
@@ -198,7 +198,7 @@ export function SellerForm({ areas }: { areas: AreaOption[] }) {
             id="s-phone"
             label="Phone number"
             required
-            hint="AL-MAKKAH will contact you on this number."
+            hint="We will contact you on this number."
             error={errors.sellerPhone}
           >
             {(p) => (
@@ -362,7 +362,7 @@ export function SellerForm({ areas }: { areas: AreaOption[] }) {
       <fieldset className="flex flex-col gap-4">
         <legend className="font-display text-2xl mb-2">Location</legend>
         <p className="text-sm text-text-muted max-w-[var(--measure)]">
-          Sharing the exact location helps AL-MAKKAH verify the property faster.
+          Sharing the exact location helps us verify the property faster.
           It is optional, and it is never shown publicly until the listing is
           approved.
         </p>
@@ -417,7 +417,7 @@ export function SellerForm({ areas }: { areas: AreaOption[] }) {
           {state === 'sending' ? 'Submitting…' : 'Submit property'}
         </Button>
         <p className="text-sm text-text-subtle max-w-[var(--measure)]">
-          Submitting does not publish your property. AL-MAKKAH reviews and
+          Submitting does not publish your property. We review and
           verifies every listing before it appears on the website.
         </p>
       </div>

@@ -22,6 +22,8 @@ import {
 export type GalleryItem = {
   id: string;
   url: string;
+  /** Derived WebP thumbnail; null for videos and pre-thumbnail uploads. */
+  thumbnailUrl: string | null;
   kind: string;
   isVideo: boolean;
   sortOrder: number;
@@ -144,7 +146,7 @@ export function MediaManager({
                     <video src={item.url} className="size-full object-cover" muted />
                   ) : (
                     <Image
-                      src={item.url}
+                      src={item.thumbnailUrl ?? item.url}
                       alt=""
                       fill
                       sizes="25vw"
@@ -285,7 +287,7 @@ export function MediaManager({
       <section className="flex flex-col gap-3">
         <h2 className="font-display text-2xl">Upload your own photos</h2>
         <p className="text-sm text-text-muted max-w-[70ch]">
-          Photos taken by AL-MAKKAH go straight onto the listing. Images up to{' '}
+          Photos taken by your own team go straight onto the listing. Images up to{' '}
           {MAX_IMAGE_BYTES / 1_048_576} MB, video up to{' '}
           {MAX_VIDEO_BYTES / 1_048_576} MB.
         </p>

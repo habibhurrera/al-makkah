@@ -5,6 +5,7 @@ import { headers } from 'next/headers';
 import { getAdmin } from '@/server/auth';
 import { signOut } from '@/server/actions/auth';
 import { Container } from '@/components/ui/layout';
+import { BRAND } from '@/lib/brand';
 
 export const metadata: Metadata = {
   robots: { index: false, follow: false, nocache: true },
@@ -43,7 +44,8 @@ export default async function AdminLayout({
         <Container>
           <div className="flex flex-wrap items-center gap-x-6 gap-y-3 py-4">
             <Link href="/admin" className="font-display text-lg">
-              AL-MAKKAH <span className="text-text-muted text-sm">admin</span>
+              {BRAND.name}{' '}
+              <span className="text-text-muted text-sm">admin</span>
             </Link>
 
             <nav aria-label="Admin" className="flex flex-wrap gap-1">

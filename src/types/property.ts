@@ -26,8 +26,14 @@ export type PropertyCardData = {
   isVerified: boolean;
   isFeatured: boolean;
   hasVideo: boolean;
-  /** Public storage URL, or null while no image has been uploaded. */
+  /** Public storage URL of the full-size cover image, or null while no image has been uploaded. */
   imageUrl: string | null;
+  /**
+   * Derived WebP thumbnail of the cover image. Cards render this; it falls back
+   * to imageUrl for files uploaded before thumbnails existed, or when
+   * generation failed.
+   */
+  thumbnailUrl: string | null;
 };
 
 export const PROPERTY_TYPE_LABEL: Record<PropertyType, string> = {

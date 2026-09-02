@@ -1,5 +1,6 @@
 import type { ReactNode } from 'react';
 import { cn } from '@/lib/cn';
+import { BRAND } from '@/lib/brand';
 
 type Tone = 'neutral' | 'accent' | 'success' | 'warning' | 'danger';
 
@@ -54,7 +55,7 @@ export function VerifiedBadge({ isVerified }: { isVerified: boolean }) {
       >
         <path d="M8 0.8l1.9 1.4 2.3-.2.7 2.2 1.9 1.3-.9 2.2.9 2.2-1.9 1.3-.7 2.2-2.3-.2L8 15.2l-1.9-1.4-2.3.2-.7-2.2L1.2 10.5l.9-2.2-.9-2.2 1.9-1.3.7-2.2 2.3.2L8 .8zm2.9 5.1l-3.7 3.7-2-2-1.1 1.1 3.1 3.1 4.8-4.8-1.1-1.1z" />
       </svg>
-      AL-MAKKAH Verified
+      {BRAND.name} Verified
     </Badge>
   );
 }
